@@ -1,8 +1,8 @@
 import sys
 import os.path
 import matplotlib.pyplot as plt
-import linearFilters as lf
-import nonLinearFilters as nlf
+from linearFilters import LinearFilters as lf
+from nonLinearFilters import NonLinearFilters as nlf
 import random
 import string
 import csv
@@ -39,8 +39,6 @@ def testLinearFilters(image, min_kernel_size, max_kernel_size):
     :param max_kernel_size: The maximum kernel size
     """
 
-    LF = lf.LinearFilters()
-
     results_csv_file_name = getResultsFile()
 
     filters = ['gaussian', 'box']
@@ -52,10 +50,10 @@ def testLinearFilters(image, min_kernel_size, max_kernel_size):
             finale_img_file_name = getFileName(filter_name)
 
             # Get the kernel
-            kernel = LF.getKernel(filter_name, kernel_size)
+            kernel = lf.getKernel(filter_name, kernel_size)
             
             # Apply the filter
-            final_img = LF.apply_filter(image, kernel)
+            final_img = lf.apply_filter(image, kernel)
 
             # Save the image
             plt.imsave(finale_img_file_name, final_img, cmap='gray')
