@@ -3,6 +3,7 @@ import os.path
 import matplotlib.pyplot as plt
 from linearFilters import LinearFilters as lf
 from nonLinearFilters import NonLinearFilters as nlf
+from edgeDetector import EdgeDetector as ed
 import random
 import string
 import csv
