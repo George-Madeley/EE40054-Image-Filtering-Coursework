@@ -1,9 +1,9 @@
 import sys
 import os.path
 import matplotlib.pyplot as plt
-from linearFilters import LinearFilters as lf
-from nonLinearFilters import NonLinearFilters as nlf
-from edgeDetector import EdgeDetector as ed
+from linearFilters import LF
+from nonLinearFilters import NLF
+from edgeDetector import ED
 import random
 import string
 import csv
@@ -21,6 +21,9 @@ def main():
 
     image_path = arguments[0]
 
+    # get image name without the extension
+    image_name = os.path.splitext(os.path.basename(image_path))[0]
+
     # Read the image
     image = plt.imread(image_path)
 
@@ -28,14 +31,15 @@ def main():
     MAX_KERNEL_SIZE = 15
 
     # Test the linear filters
-    testLinearFilters(image, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
+    testLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
 
 
-def testLinearFilters(image, min_kernel_size, max_kernel_size):
+def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
     """
     Tests the linear filters
     
-    :param image: The image to be filtered
+    :param source_image: The image to be filtered
+    :param source_image_name: The name of the image
     :param min_kernel_size: The minimum kernel size
     :param max_kernel_size: The maximum kernel size
     """
@@ -48,21 +52,21 @@ def testLinearFilters(image, min_kernel_size, max_kernel_size):
     for filter_name in filters:
         for kernel_size in kernel_sizes:
             # Get the image filename
-            finale_img_file_name = getFileName(filter_name)
+            dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
 
             # Get the kernel
-            kernel = lf.getKernel(filter_name, kernel_size)
+            kernel = LF.getKernel(filter_name, kernel_size)
             
             # Apply the filter
-            final_img = lf.apply_filter(image, kernel)
+            dest_image = LF.apply_filter(source_image, kernel)
 
             # Save the image
-            plt.imsave(finale_img_file_name, final_img, cmap='gray')
+            plt.imsave(dest_image_file_name, dest_image, cmap='gray')
 
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([True, filter_name, kernel_size, 'constant', finale_img_file_name])
+                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', dest_image_file_name])
         
 
 def getResultsFile():
@@ -72,7 +76,7 @@ def getResultsFile():
     :return: The file name
     """
     resultsFileName = './results/results.csv'
-    headers = ['linear', 'filter', 'kernel_size', 'padding', 'file_name']
+    headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'file_name']
 
     # Check if the file exists by checking if the file name is already taken.
     # If the file does not exist, create it and write the header
@@ -85,11 +89,14 @@ def getResultsFile():
     return resultsFileName
 
 
-def getFileName(filter):
+def getFileName(image_name, filter_name, kernel_size, padding):
     """
     Creates a file name for the results of the filter
 
-    :param filter: The filter that was used
+    :param image_name: The name of the image
+    :param filter_name: The name of the filter
+    :param kernel_size: The size of the kernel
+    :param padding: The type of padding
 
     :return: The file name
     """
@@ -99,8 +106,13 @@ def getFileName(filter):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Check if filter directory exists
-    directory += filter + '/'
+    # Create a directory for the filter type if it doesn't exist
+    directory += image_name + '/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Create a directory for the filter name if it doesn't exist
+    directory += filter_name + '/'
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -111,7 +123,11 @@ def getFileName(filter):
         # Generate a random 8 long string. This will be used to name the file
         # so that we don't overwrite the previous results
         random_string = ''.join(random.choice(string.ascii_letters) for i in range(8))
-        fileName = directory + random_string + '.png'
+        # join kernel size, padding, and random_string with '-' to create the file name
+        fileName = '-'.join([str(kernel_size), padding, random_string]) + '.png'
+
+        # add the file name to the directory
+        fileName = directory + fileName
 
         # check if the file exists
         fileExists = os.path.isfile(fileName)
