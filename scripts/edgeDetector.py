@@ -111,3 +111,5 @@ class EdgeDetector:
         edge_direction = np.arctan2(horizontal_edges, vertical_edges)
         
         return edge_direction
+
+ED = EdgeDetector()

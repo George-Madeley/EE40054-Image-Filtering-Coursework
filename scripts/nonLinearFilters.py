@@ -52,3 +52,5 @@ class NonLinearFilters:
 
         median = np.median(image_section)
         return median
+    
+NLF = NonLinearFilters()

@@ -6,6 +6,7 @@ class LinearFilters:
     """
     Class for applying linear filters to an image
     """
+
     def getKernel(self, filter_name, kernel_size):
         """
         Gets the kernel for a given filter name and kernel size
@@ -111,3 +112,5 @@ class LinearFilters:
         convolved_image = convolved_image[bounds(0) : new_size[0], bounds(1) : new_size[1]]
         
         return convolved_image
+    
+LF = LinearFilters()
