@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import math
 
 class NonLinearFilters:
     def apply_filter(self, image, kernel_type='median', kernel_size=3, padding='constant', order=2):
@@ -8,13 +6,36 @@ class NonLinearFilters:
         Performs a 2D convolution on an image using a kernel.
 
         :param image: The image to be convolved
-        :param kernel_type: The type of kernel to convolve the image with
+        :param kernel_type: The type of kernel to convolve the image with. Possible values:
+            - 'median',
+            - 'geometric_median',
+            - 'harmonic_mean',
+            - 'contra_harmonic_mean'
         :param kernel_size: The size of the kernel
-        :param padding: The type of padding to use
+        :param padding: The type of padding to use. Possible values:
+            - 'constant',
+            - 'edge',
+            - 'linear_ramp',
         :param order: The order of the filter
 
         :return: The convolved image
+
+        :raises ValueError: If the kernel size is even
+        :raises ValueError: If the padding type is invalid
+        :raises ValueError: If the kernel size is less than 1
         """
+
+        # Check that the kernel size is odd. If the kernel size is even, raise an exception.
+        if kernel_size % 2 == 0:
+            raise ValueError('Kernel size must be odd.')
+        
+        # Check that the padding type is valid. If the padding type is invalid, raise an exception.
+        if padding not in ['constant', 'edge', 'linear_ramp']:
+            raise ValueError('Invalid padding type.')
+        
+        # Check that the kernel size is greater than 0. If the kernel size is less than 1, raise an exception.
+        if kernel_size < 1:
+            raise ValueError('Kernel size must be greater than 0.')
 
         # Get the height and width of the image
         height, width = image.shape
@@ -44,7 +65,11 @@ class NonLinearFilters:
         """
         Applies the desired filter to the region of interest (ROI).
         
-        :param kernel_type: The type of kernel to convolve the image with
+        :param kernel_type: The type of kernel to convolve the image with. Possible values:
+            - 'median',
+            - 'geometric_median',
+            - 'harmonic_mean',
+            - 'contra_harmonic_mean'
         :param roi: The region of interest
         :param order: The order of the filter
 
@@ -109,7 +134,12 @@ class NonLinearFilters:
         :param order: The order of the filter
         
         :return: The filtered image section
+
+        :raises ValueError: If the order is less than or equal to 0
         """
+        if order <= 0:
+            raise ValueError('Order must be greater than 0.')
+
         numerator = np.sum(image_section ** (order + 1))
         denominator = np.sum(image_section ** order)
         contra_harmonic_mean = numerator / denominator

@@ -11,16 +11,22 @@ class LinearFilters:
         """
         Gets the kernel for a given filter name and kernel size
         
-        :param filter_name: The name of the filter
+        :param filter_name: The name of the filter. Possible values are
+            - 'gaussian',
+            - 'box',
+            - 'butterworth_low_pass',
+            - 'low_pass'
         :param kernel_size: The size of the kernel
         :param order: The order of the filter
         :param cutoff: The cutoff frequency
         :param stdiv: The standard deviation of the Gaussian filter
         
         :return: The kernel
-        
-        :raises: Exception if the filter name is invalid
         """
+
+        # Check for errors in the parameters
+        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff, stdiv=stdiv)
+
         # get the kernel
         if filter_name == 'gaussian':
             kernel = self.getGaussianKernel(kernel_size, stdiv)
@@ -44,6 +50,8 @@ class LinearFilters:
 
         :return: The Gaussian kernel
         """
+        # Check for errors in the parameters
+        self.checkErrors(size, 'constant', stdiv=stdiv)
 
         # Creates a kernel of zeros
         kernel = np.zeros(shape=(size, size))
@@ -69,6 +77,9 @@ class LinearFilters:
 
         :return: The box kernel
         """
+        # Check for errors in the parameters
+        self.checkErrors(size, 'constant')
+
         # Creates a kernel of ones
         kernel = np.ones(shape=(size, size))
         # Normalizes the kernel
@@ -86,6 +97,9 @@ class LinearFilters:
         
         :return: The Butterworth low pass filter
         """
+        # Check for errors in the parameters
+        self.checkErrors(size, 'constant', order=order, cutoff=cutoff)
+
         # Creates a kernel of zeros
         kernel = np.zeros(shape=(size, size))
         # Calculates the center of the kernel
@@ -107,6 +121,8 @@ class LinearFilters:
         
         :return: The low pass filter
         """
+        # Check for errors in the parameters
+        self.checkErrors(size, 'constant', cutoff=cutoff)
 
         # Creates a kernel of zeros
         kernel = np.zeros(shape=(size, size))
@@ -164,5 +180,40 @@ class LinearFilters:
         convolved_image = convolved_image[bounds(0) : new_size[0], bounds(1) : new_size[1]]
         
         return convolved_image
+    
+    def checkErrors(self, kernel_size, padding, order=None, cutoff=None, stdiv=None):
+        """
+        Checks for errors in the LinearFilters class
+
+        :param kernel_size: The size of the kernel
+        :param padding: The type of padding to use
+        :param order: The order of the filter
+        :param cutoff: The cutoff frequency
+        :param stdiv: The standard deviation of the Gaussian filter
+
+        :raises ValueError: If the kernel size is even
+        :raises ValueError: If the padding type is invalid
+        :raises ValueError: If the kernel size is less than 1
+        :raises ValueError: If the standard deviation is less than 0
+        :raises ValueError: If the order is less than 1
+        :raises ValueError: If the cutoff frequency is less than 0
+        """
+        if kernel_size % 2 == 0:
+            raise ValueError('Kernel size must be odd.')
+        
+        if kernel_size < 1:
+            raise ValueError('Kernel size must be greater than 0.')
+        
+        if stdiv < 0 and stdiv is not None:
+            raise ValueError('Standard deviation must be greater than 0.')
+        
+        if padding not in ['constant', 'edge', 'linear_ramp']:
+            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
+        
+        if order < 1 and order is not None:
+            raise ValueError('Order must be greater than 0.')
+        
+        if cutoff < 0 and cutoff is not None:
+            raise ValueError('Cutoff frequency must be greater than 0.')
     
 LF = LinearFilters()
