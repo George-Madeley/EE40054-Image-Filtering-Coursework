@@ -8,9 +8,6 @@ class NonLinearFilters:
         :param image: The image to be convolved
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
-            - 'geometric_median',
-            - 'harmonic_mean',
-            - 'contra_harmonic_mean'
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use. Possible values:
             - 'constant',
@@ -67,9 +64,6 @@ class NonLinearFilters:
         
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
-            - 'geometric_median',
-            - 'harmonic_mean',
-            - 'contra_harmonic_mean'
         :param roi: The region of interest
         :param order: The order of the filter
 
@@ -79,12 +73,6 @@ class NonLinearFilters:
         """
         if kernel_type == 'median':
             return self.applyMedianFilter(roi)
-        elif kernel_type == 'geometric_median':
-            return self.applyGeometricMeanFilter(roi)
-        elif kernel_type == 'harmonic_mean':
-            return self.applyHarmonicMeanFilter(roi)
-        elif kernel_type == 'contra_harmonic_mean':
-            return self.applyContraHarmonicMeanFilter(roi, order)
         else:
             raise Exception('Invalid kernel type.')
     
