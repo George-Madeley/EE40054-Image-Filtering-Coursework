@@ -56,7 +56,7 @@ class NonLinearFilters:
                 roi = padded_image[i:i+kernel_size, j:j+kernel_size]
 
                 # Apply the desired kernel type
-                convolved_value = self.calculateConvolvedValue(kernel_type, order, roi)
+                convolved_value = self.calculateConvolvedValue(kernel_type, roi, order=order)
                 convolved_image[i, j] = convolved_value
                 
         return convolved_image
@@ -88,7 +88,7 @@ class NonLinearFilters:
         else:
             raise Exception('Invalid kernel type.')
     
-    def apply_median_filter(image_section):
+    def apply_median_filter(self, image_section):
         """
         Performs median filtering on an image section.
         
@@ -100,7 +100,7 @@ class NonLinearFilters:
         median = np.median(image_section)
         return median
     
-    def apply_geometric_median_filter(image_section):
+    def apply_geometric_median_filter(self, image_section):
         """
         Performs geometic median filtering on an image section.
         
@@ -113,7 +113,7 @@ class NonLinearFilters:
 
         return geometric_median
     
-    def apply_harmonic_mean_filter(image_section):
+    def apply_harmonic_mean_filter(self, image_section):
         """
         Performs harmonic mean filtering on an image section.
         
@@ -126,7 +126,7 @@ class NonLinearFilters:
 
         return harmonic_mean
     
-    def apply_contra_harmonic_mean_filter(image_section, order):
+    def apply_contra_harmonic_mean_filter(self, image_section, order):
         """
         Performs contra-harmonic mean filtering on an image section.
         
