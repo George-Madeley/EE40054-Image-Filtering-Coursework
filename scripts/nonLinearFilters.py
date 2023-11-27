@@ -176,6 +176,8 @@ class NonLinearFilters:
         
         :return: The filtered image section
         """
+        # Force all warnings to be errors
+        np.seterr(all='raise')
 
         # Flatten the image
         flattened_image_section = image_section.flatten()
@@ -201,13 +203,13 @@ class NonLinearFilters:
             lower_threshold = median_value - difference_median_max
             
             # Get the pixels that are greater than the lower threshold
-            truncated_image = flattened_image_section[flattened_image_section > lower_threshold]
+            truncated_image = flattened_image_section[flattened_image_section >= lower_threshold]
         elif difference_median_min < difference_median_max:
             # Calculate the upper threshold
             upper_threshold = median_value + difference_median_min
             
             # Get the pixels that are less than the upper threshold
-            truncated_image = flattened_image_section[flattened_image_section < upper_threshold]
+            truncated_image = flattened_image_section[flattened_image_section <= upper_threshold]
         else:
             # If the difference between the median and the minimum value is equal
             # to the difference between the median and the maximum value, then
@@ -219,7 +221,6 @@ class NonLinearFilters:
 
         return truncated_median
 
-    
     def applyMinFilter(self, image_section):
         """
         Performs min filtering on an image section.
