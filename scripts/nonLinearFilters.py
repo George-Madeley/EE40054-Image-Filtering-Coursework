@@ -1,19 +1,20 @@
 import numpy as np
 
 class NonLinearFilters:
-    def applyFilter(self, image, kernel_type='median', kernel_size=3, padding='constant', order=2):
+    def applyFilter(self, image, kernel_type='median', kernel_size=3, padding='constant'):
         """
         Performs a 2D convolution on an image using a kernel.
 
         :param image: The image to be convolved
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
+            - 'min',
+            - 'max',
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use. Possible values:
             - 'constant',
             - 'edge',
             - 'linear_ramp',
-        :param order: The order of the filter
 
         :return: The convolved image
 
@@ -53,19 +54,20 @@ class NonLinearFilters:
                 roi = padded_image[i:i+kernel_size, j:j+kernel_size]
 
                 # Apply the desired kernel type
-                convolved_value = self.calculateConvolvedValue(kernel_type, roi, order=order)
+                convolved_value = self.calculateConvolvedValue(kernel_type, roi)
                 convolved_image[i, j] = convolved_value
                 
         return convolved_image
 
-    def calculateConvolvedValue(self, kernel_type, roi, order=2):
+    def calculateConvolvedValue(self, kernel_type, roi):
         """
         Applies the desired filter to the region of interest (ROI).
         
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
+            - 'min',
+            - 'max',
         :param roi: The region of interest
-        :param order: The order of the filter
 
         :return: The calculated value
 
@@ -73,6 +75,10 @@ class NonLinearFilters:
         """
         if kernel_type == 'median':
             return self.applyMedianFilter(roi)
+        elif kernel_type == 'min':
+            return self.applyMinFilter(roi)
+        elif kernel_type == 'max':
+            return self.applyMaxFilter(roi)
         else:
             raise Exception('Invalid kernel type.')
     
@@ -87,6 +93,30 @@ class NonLinearFilters:
 
         median = np.median(image_section)
         return median
+    
+    def applyMinFilter(self, image_section):
+        """
+        Performs min filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+
+        min_value = np.min(image_section)
+        return min_value
+    
+    def applyMaxFilter(self, image_section):
+        """
+        Performs max filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+
+        max_value = np.max(image_section)
+        return max_value
     
     
 NLF = NonLinearFilters()
