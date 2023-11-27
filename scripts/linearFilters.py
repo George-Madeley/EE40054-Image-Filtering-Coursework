@@ -7,7 +7,7 @@ class LinearFilters:
     Class for applying linear filters to an image
     """
 
-    def getKernel(self, filter_name, kernel_size, order=2, cutoff=50, stdiv=1):
+    def getKernel(self, filter_name, kernel_size, order=2, cutoff=50.0, stdiv=1.0):
         """
         Gets the kernel for a given filter name and kernel size
         
@@ -191,6 +191,11 @@ class LinearFilters:
         :param cutoff: The cutoff frequency
         :param stdiv: The standard deviation of the Gaussian filter
 
+        :raises TypeError: If the kernel size is not an integer
+        :raises TypeError: If the order is not an integer
+        :raises TypeError: If the cutoff frequency is not a float
+        :raises TypeError: If the standard deviation is not a float
+
         :raises ValueError: If the kernel size is even
         :raises ValueError: If the padding type is invalid
         :raises ValueError: If the kernel size is less than 1
@@ -198,22 +203,56 @@ class LinearFilters:
         :raises ValueError: If the order is less than 1
         :raises ValueError: If the cutoff frequency is less than 0
         """
-        if kernel_size % 2 == 0:
-            raise ValueError('Kernel size must be odd.')
+
+        # Check of errors related to the kernel size.
+        # Check if the kernel size is an integer
+        if isinstance(kernel_size, int):
+            # Check if the kernel size is even
+            if kernel_size % 2 == 0:
+                raise ValueError('Kernel size must be odd.')
+            # Check if the kernel size is less than 1
+            elif kernel_size < 1:
+                raise ValueError('Kernel size must be greater than 0.')
+        # If the kernel size is not an integer, raise an error.
+        elif kernel_size is not None:
+            raise TypeError('Kernel size must be an integer.')
         
-        if kernel_size < 1:
-            raise ValueError('Kernel size must be greater than 0.')
+        # Check for errors related to the order.
+        # Check if the order is an integer
+        if isinstance(order, int):
+            # Check if the order is less than 1
+            if order < 1 and order:
+                raise ValueError('Order must be greater than 0.')
+        # If the order is not an integer, raise an error.
+        elif order is not None:
+            raise TypeError('Order must be an integer.')
         
-        if stdiv < 0 and stdiv is not None:
-            raise ValueError('Standard deviation must be greater than 0.')
+        # Check for errors related to the cutoff frequency.
+        # Check if the cutoff frequency is a float
+        if isinstance(cutoff, float):
+            # Check if the cutoff frequency is less than 0
+            if cutoff < 0 and cutoff:
+                raise ValueError('Cutoff frequency must be greater than 0.')
+        # If the cutoff frequency is not a float, raise an error.
+        elif cutoff is not None:
+            raise TypeError('Cutoff frequency must be a float.')
         
+        # Check for errors related to the standard deviation.
+        # Check if the standard deviation is a float
+        if isinstance(stdiv, float):
+            # Check if the standard deviation is less than 0
+            if stdiv < 0 and stdiv:
+                raise ValueError('Standard deviation must be greater than 0.')
+        # If the standard deviation is not a float, raise an error.
+        elif stdiv is not None:
+            raise TypeError('Standard deviation must be a float.')
+        
+        # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:
             raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
         
-        if order < 1 and order is not None:
-            raise ValueError('Order must be greater than 0.')
         
-        if cutoff < 0 and cutoff is not None:
-            raise ValueError('Cutoff frequency must be greater than 0.')
+        
+        
     
 LF = LinearFilters()
