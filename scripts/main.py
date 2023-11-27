@@ -103,7 +103,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', dest_image_file_name])
+                csvWriter.writerow([source_image_name, 'nonlinear', filter_name, kernel_size, 'constant', dest_image_file_name])
 
 
 def getResultsFile():
