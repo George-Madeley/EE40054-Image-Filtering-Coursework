@@ -46,7 +46,7 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
 
     results_csv_file_name = getResultsFile()
 
-    filters = ['gaussian', 'box']
+    filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass']
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
     for filter_name in filters:
@@ -77,6 +77,11 @@ def getResultsFile():
     """
     resultsFileName = './results/results.csv'
     headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'file_name']
+
+    # Check if the results directory exists
+    directory = './results/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     # Check if the file exists by checking if the file name is already taken.
     # If the file does not exist, create it and write the header
