@@ -7,12 +7,15 @@ class LinearFilters:
     Class for applying linear filters to an image
     """
 
-    def getKernel(self, filter_name, kernel_size):
+    def getKernel(self, filter_name, kernel_size, order=2, cutoff=50, stdiv=1):
         """
         Gets the kernel for a given filter name and kernel size
         
         :param filter_name: The name of the filter
         :param kernel_size: The size of the kernel
+        :param order: The order of the filter
+        :param cutoff: The cutoff frequency
+        :param stdiv: The standard deviation of the Gaussian filter
         
         :return: The kernel
         
@@ -20,9 +23,13 @@ class LinearFilters:
         """
         # get the kernel
         if filter_name == 'gaussian':
-            kernel = self.getGaussianKernel(kernel_size, 1)
+            kernel = self.getGaussianKernel(kernel_size, stdiv)
         elif filter_name == 'box':
             kernel = self.getBoxKernel(kernel_size)
+        elif filter_name == 'butterworth_low_pass':
+            kernel = self.getButterworthLowPassFilter(kernel_size, cutoff, order)
+        elif filter_name == 'low_pass':
+            kernel = self.getLowPassFilter(kernel_size, cutoff)
         else:
             raise Exception('Invalid filter name.')
         
@@ -66,6 +73,51 @@ class LinearFilters:
         kernel = np.ones(shape=(size, size))
         # Normalizes the kernel
         kernel /= np.sum(kernel)
+        return kernel
+    
+    def getButterworthLowPassFilter(self, size, cutoff, order):
+        """
+        Creates a Butterworth low pass filter of size (size x size) with cutoff frequency cutoff
+        and order order
+        
+        :param size: The size of the filter
+        :param cutoff: The cutoff frequency
+        :param order: The order of the filter
+        
+        :return: The Butterworth low pass filter
+        """
+        # Creates a kernel of zeros
+        kernel = np.zeros(shape=(size, size))
+        # Calculates the center of the kernel
+        center = (size - 1) / 2
+        # Creates a vector of values from -center to center
+        vector = np.linspace(-center, center, size)
+        # Calculates the Butterworth low pass filter
+        butterworth_low_pass_filter = 1 / (1 + (vector / cutoff) ** (2 * order))
+        # Creates the Butterworth low pass filter
+        kernel = np.outer(butterworth_low_pass_filter, butterworth_low_pass_filter)
+        return kernel
+    
+    def getLowPassFilter(self, size, cutoff):
+        """
+        Creates a low pass filter of size (size x size) with cutoff frequency cutoff
+        
+        :param size: The size of the filter
+        :param cutoff: The cutoff frequency
+        
+        :return: The low pass filter
+        """
+
+        # Creates a kernel of zeros
+        kernel = np.zeros(shape=(size, size))
+        # Calculates the center of the kernel
+        center = (size - 1) / 2
+        # Creates a vector of values from -center to center
+        vector = np.linspace(-center, center, size)
+        # Calculates the low pass filter
+        low_pass_filter = np.where(np.abs(vector) <= cutoff, 1, 0)
+        # Creates the low pass filter
+        kernel = np.outer(low_pass_filter, low_pass_filter)
         return kernel
 
     def apply_filter(self, image, kernel):
