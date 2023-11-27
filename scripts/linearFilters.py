@@ -217,16 +217,14 @@ class LinearFilters:
         
         :return: The filtered image section
         """
-        try:
-            reciprocal = 1 / image_section
-        except ZeroDivisionError:
-            # If the image section contains a zero, add a negligibly small value to each element
-            # to avoid a division by zero error.
-            image_section += 0.0000001
-            reciprocal = 1 / image_section
+        # Reciprocal of the image section. Return 0 if divide by 0.
+        reciprocal = np.divide(1, image_section, out=np.zeros_like(image_section), where=image_section!=0)
+        
+        reciprocal_sum = np.sum(reciprocal)
+        if reciprocal_sum == 0:
+            return 0
         
         harmonic_mean = image_section.size / np.sum(reciprocal)
-
         return harmonic_mean
     
     def applyContraHarmonicMeanFilter(self, image_section, order):
@@ -245,6 +243,8 @@ class LinearFilters:
 
         numerator = np.sum(image_section ** (order + 1))
         denominator = np.sum(image_section ** order)
+        if denominator == 0:
+            return 0
         contra_harmonic_mean = numerator / denominator
 
         return contra_harmonic_mean
