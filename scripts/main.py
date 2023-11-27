@@ -101,7 +101,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
 
             # Print the results
-            print(f'Image: {source_image_name}\tFilter Type: linear\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
+            print(f'Image: {source_image_name}\tFilter Type: nonlinear\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
 
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
