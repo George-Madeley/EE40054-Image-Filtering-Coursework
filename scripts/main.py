@@ -34,6 +34,9 @@ def main():
     # Test the linear filters
     testLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
 
+    # Test the non-linear filters
+    testNonLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
+
 
 def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
     """
@@ -71,7 +74,40 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
                 csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', dest_image_file_name])
-        
+
+def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
+    """
+    Tests the non-linear filters
+    
+    :param source_image: The image to be filtered
+    :param source_image_name: The name of the image
+    :param min_kernel_size: The minimum kernel size
+    :param max_kernel_size: The maximum kernel size
+    """
+    results_csv_file_name = getResultsFile()
+
+    filters = ['median', 'geometric_median', 'harmonic_mean', 'contra_harmonic_mean']
+    kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
+
+    for filter_name in filters:
+        for kernel_size in kernel_sizes:
+            # Get the image filename
+            dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
+            
+            # Apply the filter
+            dest_image = NLF.apply_filter(source_image, filter_name, kernel_size)
+
+            # Save the image
+            plt.imsave(dest_image_file_name, dest_image, cmap='gray')
+
+            # Print the results
+            print(f'Image: {source_image_name}\tFilter Type: linear\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
+
+            # Write the results to the results file
+            with open(results_csv_file_name, 'a', newline='') as resultsFile:
+                csvWriter = csv.writer(resultsFile)
+                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', dest_image_file_name])
+
 
 def getResultsFile():
     """
