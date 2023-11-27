@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import math
 
 class NonLinearFilters:
-    def apply_filter(self, image, kernel_type='median', kernel_size=3, padding='constant'):
+    def apply_filter(self, image, kernel_type='median', kernel_size=3, padding='constant', order=2):
         """
         Performs a 2D convolution on an image using a kernel.
 
@@ -11,6 +11,7 @@ class NonLinearFilters:
         :param kernel_type: The type of kernel to convolve the image with
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use
+        :param order: The order of the filter
 
         :return: The convolved image
         """
@@ -34,12 +35,33 @@ class NonLinearFilters:
                 roi = padded_image[i:i+kernel_size, j:j+kernel_size]
 
                 # Apply the desired kernel type
-                if kernel_type == 'median':
-                    convolved_image[i, j] = self.apply_median_filter(roi)
-                else:
-                    raise Exception('Invalid kernel type.')
+                convolved_value = self.apply_filter(kernel_type, order, roi)
+                convolved_image[i, j] = convolved_value
                 
         return convolved_image
+
+    def apply_filter(self, kernel_type, roi, order=2):
+        """
+        Applies the desired filter to the region of interest (ROI).
+        
+        :param kernel_type: The type of kernel to convolve the image with
+        :param roi: The region of interest
+        :param order: The order of the filter
+
+        :return: The calculated value
+
+        :raises Exception: If the kernel type is invalid
+        """
+        if kernel_type == 'median':
+            return self.apply_median_filter(roi)
+        elif kernel_type == 'geometric_median':
+            return self.apply_geometric_median_filter(roi)
+        elif kernel_type == 'harmonic_mean':
+            return self.apply_harmonic_mean_filter(roi)
+        elif kernel_type == 'contra_harmonic_mean':
+            return self.apply_contra_harmonic_mean_filter(roi, order)
+        else:
+            raise Exception('Invalid kernel type.')
     
     def apply_median_filter(image_section):
         """
@@ -52,5 +74,46 @@ class NonLinearFilters:
 
         median = np.median(image_section)
         return median
+    
+    def apply_geometric_median_filter(image_section):
+        """
+        Performs geometic median filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+        product = np.product(image_section)
+        geometric_median = product ** (1 / image_section.size)
+
+        return geometric_median
+    
+    def apply_harmonic_mean_filter(image_section):
+        """
+        Performs harmonic mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+        reciprocal = 1 / image_section
+        harmonic_mean = image_section.size / np.sum(reciprocal)
+
+        return harmonic_mean
+    
+    def apply_contra_harmonic_mean_filter(image_section, order):
+        """
+        Performs contra-harmonic mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        :param order: The order of the filter
+        
+        :return: The filtered image section
+        """
+        numerator = np.sum(image_section ** (order + 1))
+        denominator = np.sum(image_section ** order)
+        contra_harmonic_mean = numerator / denominator
+
+        return contra_harmonic_mean
     
 NLF = NonLinearFilters()
