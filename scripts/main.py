@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import random
 import string
 import csv
+import time
 
 from linearFilters import LF
 from nonLinearFilters import NLF
@@ -58,8 +59,14 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
             # Get the image filename
             dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
             
+            # Start the timer
+            start_time = time.perf_counter_ns()
             # Apply the filter
             dest_image = LF.applyFilter(source_image, filter_name, kernel_size)
+            # Stop the timer
+            end_time = time.perf_counter_ns()
+            # Calculate the runtime
+            runtime = end_time - start_time
 
             # Save the image
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
@@ -70,7 +77,7 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', dest_image_file_name])
+                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', runtime, dest_image_file_name])
 
 def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
     """
@@ -83,7 +90,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
     """
     results_csv_file_name = getResultsFile()
 
-    filters = ['median']
+    filters = ['median', 'adaptive_weighted_median', 'truncated_median', 'max', 'min', 'midpoint', 'alpha_trimmed_mean']
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
     for filter_name in filters:
@@ -91,8 +98,14 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
             # Get the image filename
             dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
             
+            # Start the timer
+            start_time = time.perf_counter_ns()
             # Apply the filter
             dest_image = NLF.applyFilter(source_image, filter_name, kernel_size)
+            # Stop the timer
+            end_time = time.perf_counter_ns()
+            # Calculate the runtime
+            runtime = end_time - start_time
 
             # Save the image
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
@@ -103,7 +116,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, 'nonlinear', filter_name, kernel_size, 'constant', dest_image_file_name])
+                csvWriter.writerow([source_image_name, 'nonlinear', filter_name, kernel_size, 'constant', runtime, dest_image_file_name])
 
 
 def getResultsFile():
@@ -113,7 +126,7 @@ def getResultsFile():
     :return: The file name
     """
     resultsFileName = './results/results.csv'
-    headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'file_name']
+    headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'runtime', 'file_name']
 
     # Check if the results directory exists
     directory = './results/'
