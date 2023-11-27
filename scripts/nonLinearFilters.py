@@ -56,12 +56,12 @@ class NonLinearFilters:
                 roi = padded_image[i:i+kernel_size, j:j+kernel_size]
 
                 # Apply the desired kernel type
-                convolved_value = self.apply_filter(kernel_type, order, roi)
+                convolved_value = self.calculateConvolvedValue(kernel_type, order, roi)
                 convolved_image[i, j] = convolved_value
                 
         return convolved_image
 
-    def apply_filter(self, kernel_type, roi, order=2):
+    def calculateConvolvedValue(self, kernel_type, roi, order=2):
         """
         Applies the desired filter to the region of interest (ROI).
         
