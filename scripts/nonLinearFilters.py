@@ -1,7 +1,7 @@
 import numpy as np
 
 class NonLinearFilters:
-    def apply_filter(self, image, kernel_type='median', kernel_size=3, padding='constant', order=2):
+    def applyFilter(self, image, kernel_type='median', kernel_size=3, padding='constant', order=2):
         """
         Performs a 2D convolution on an image using a kernel.
 
@@ -78,17 +78,17 @@ class NonLinearFilters:
         :raises Exception: If the kernel type is invalid
         """
         if kernel_type == 'median':
-            return self.apply_median_filter(roi)
+            return self.applyMedianFilter(roi)
         elif kernel_type == 'geometric_median':
-            return self.apply_geometric_median_filter(roi)
+            return self.applyGeometricMeanFilter(roi)
         elif kernel_type == 'harmonic_mean':
-            return self.apply_harmonic_mean_filter(roi)
+            return self.applyHarmonicMeanFilter(roi)
         elif kernel_type == 'contra_harmonic_mean':
-            return self.apply_contra_harmonic_mean_filter(roi, order)
+            return self.applyContraHarmonicMeanFilter(roi, order)
         else:
             raise Exception('Invalid kernel type.')
     
-    def apply_median_filter(self, image_section):
+    def applyMedianFilter(self, image_section):
         """
         Performs median filtering on an image section.
         
@@ -100,50 +100,5 @@ class NonLinearFilters:
         median = np.median(image_section)
         return median
     
-    def apply_geometric_median_filter(self, image_section):
-        """
-        Performs geometic median filtering on an image section.
-        
-        :param image_section: The image section to be filtered
-        
-        :return: The filtered image section
-        """
-        product = np.product(image_section)
-        geometric_median = product ** (1 / image_section.size)
-
-        return geometric_median
-    
-    def apply_harmonic_mean_filter(self, image_section):
-        """
-        Performs harmonic mean filtering on an image section.
-        
-        :param image_section: The image section to be filtered
-        
-        :return: The filtered image section
-        """
-        reciprocal = 1 / image_section
-        harmonic_mean = image_section.size / np.sum(reciprocal)
-
-        return harmonic_mean
-    
-    def apply_contra_harmonic_mean_filter(self, image_section, order):
-        """
-        Performs contra-harmonic mean filtering on an image section.
-        
-        :param image_section: The image section to be filtered
-        :param order: The order of the filter
-        
-        :return: The filtered image section
-
-        :raises ValueError: If the order is less than or equal to 0
-        """
-        if order <= 0:
-            raise ValueError('Order must be greater than 0.')
-
-        numerator = np.sum(image_section ** (order + 1))
-        denominator = np.sum(image_section ** order)
-        contra_harmonic_mean = numerator / denominator
-
-        return contra_harmonic_mean
     
 NLF = NonLinearFilters()

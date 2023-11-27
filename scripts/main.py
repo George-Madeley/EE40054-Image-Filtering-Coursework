@@ -50,19 +50,16 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
 
     results_csv_file_name = getResultsFile()
 
-    filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass']
+    filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass', 'geometric_mean', 'harmonic_mean', 'contra_harmonic_mean']
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
     for filter_name in filters:
         for kernel_size in kernel_sizes:
             # Get the image filename
             dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
-
-            # Get the kernel
-            kernel = LF.getKernel(filter_name, kernel_size)
             
             # Apply the filter
-            dest_image = LF.apply_filter(source_image, kernel)
+            dest_image = LF.applyFilter(source_image, filter_name, kernel_size)
 
             # Save the image
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
@@ -86,7 +83,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
     """
     results_csv_file_name = getResultsFile()
 
-    filters = ['median', 'geometric_median', 'harmonic_mean', 'contra_harmonic_mean']
+    filters = ['median']
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
     for filter_name in filters:
@@ -95,7 +92,7 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
             dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
             
             # Apply the filter
-            dest_image = NLF.apply_filter(source_image, filter_name, kernel_size)
+            dest_image = NLF.applyFilter(source_image, filter_name, kernel_size)
 
             # Save the image
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')

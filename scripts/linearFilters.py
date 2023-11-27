@@ -7,21 +7,25 @@ class LinearFilters:
     Class for applying linear filters to an image
     """
 
-    def getKernel(self, filter_name, kernel_size, order=2, cutoff=50.0, stdiv=1.0):
+    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0, stdiv=1.0):
         """
-        Gets the kernel for a given filter name and kernel size
+        Applies a linear filter to an image
         
+        :param image: The image to be filtered
         :param filter_name: The name of the filter. Possible values are
             - 'gaussian',
             - 'box',
             - 'butterworth_low_pass',
             - 'low_pass'
+            - 'geometric_mean',
+            - 'harmonic_mean',
+            - 'contra_harmonic_mean'
         :param kernel_size: The size of the kernel
         :param order: The order of the filter
         :param cutoff: The cutoff frequency
         :param stdiv: The standard deviation of the Gaussian filter
         
-        :return: The kernel
+        :return: The filtered image
         """
 
         # Check for errors in the parameters
@@ -30,16 +34,27 @@ class LinearFilters:
         # get the kernel
         if filter_name == 'gaussian':
             kernel = self.getGaussianKernel(kernel_size, stdiv)
+            return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'box':
             kernel = self.getBoxKernel(kernel_size)
+            return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'butterworth_low_pass':
             kernel = self.getButterworthLowPassFilter(kernel_size, cutoff, order)
+            return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'low_pass':
             kernel = self.getLowPassFilter(kernel_size, cutoff)
+            return self.calculateFrequencyDomainConvolution(image, kernel)
+        elif filter_name == 'geometric_mean':
+            filter_function = lambda roi: self.applyGeometricMeanFilter(roi)
+            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+        elif filter_name == 'harmonic_mean':
+            filter_function = lambda roi: self.applyHarmonicMeanFilter(roi)
+            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+        elif filter_name == 'contra_harmonic_mean':
+            filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, order)
+            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
         else:
             raise Exception('Invalid filter name.')
-        
-        return kernel
 
     def getGaussianKernel(self, size, stdiv):
         """
@@ -136,7 +151,7 @@ class LinearFilters:
         kernel = np.outer(low_pass_filter, low_pass_filter)
         return kernel
 
-    def apply_filter(self, image, kernel):
+    def calculateFrequencyDomainConvolution(self, image, kernel):
         """
         Performs a convolution on an image using a kernel using the Fast Fourier Transform
         algorithm.
@@ -180,7 +195,96 @@ class LinearFilters:
         convolved_image = convolved_image[bounds(0) : new_size[0], bounds(1) : new_size[1]]
         
         return convolved_image
+        
+    def applyGeometricMeanFilter(self, image_section):
+        """
+        Performs geometic mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+        product = np.product(image_section)
+        geometric_median = product ** (1 / image_section.size)
+
+        return geometric_median
     
+    def applyHarmonicMeanFilter(self, image_section):
+        """
+        Performs harmonic mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+        try:
+            reciprocal = 1 / image_section
+        except ZeroDivisionError:
+            # If the image section contains a zero, add a negligibly small value to each element
+            # to avoid a division by zero error.
+            image_section += 0.0000001
+            reciprocal = 1 / image_section
+        
+        harmonic_mean = image_section.size / np.sum(reciprocal)
+
+        return harmonic_mean
+    
+    def applyContraHarmonicMeanFilter(self, image_section, order):
+        """
+        Performs contra-harmonic mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        :param order: The order of the filter
+        
+        :return: The filtered image section
+
+        :raises ValueError: If the order is less than or equal to 0
+        """
+        if order <= 0:
+            raise ValueError('Order must be greater than 0.')
+
+        numerator = np.sum(image_section ** (order + 1))
+        denominator = np.sum(image_section ** order)
+        contra_harmonic_mean = numerator / denominator
+
+        return contra_harmonic_mean
+    
+    def calculateSpatialDomainConvolution(self, image, kernel_size, filter_function, padding='constant'):
+        """
+        Performs a convolution on an image using a kernel using the spatial domain algorithm.
+        
+        :param image: The image to be convolved
+        :param kernel_size: The size of the kernel
+        :param filter_function: The filter function to be applied
+        :param padding: The type of padding to use. Possible values:
+        
+        :return: The convolved image
+        """
+
+        # Get the height and width of the image
+        height, width = image.shape
+
+        # Calculate how much the image needs to be padded
+        padding_size = int((kernel_size - 1) / 2)
+
+        # Create a padded image with zeros
+        padded_image = np.pad(image, padding_size, mode=padding)
+
+        # Create an empty output image
+        convolved_image = np.zeros_like(image)
+
+        # Iterate over each pixel in the image
+        for i in range(height):
+            for j in range(width):
+                # Get the region of interest (ROI) from the padded image
+                roi = padded_image[i:i+kernel_size, j:j+kernel_size]
+
+                # Apply the desired kernel type
+                convolved_value = filter_function(roi)
+                convolved_image[i, j] = convolved_value
+                
+        return convolved_image
+
     def checkErrors(self, kernel_size, padding, order=None, cutoff=None, stdiv=None):
         """
         Checks for errors in the LinearFilters class
@@ -249,10 +353,6 @@ class LinearFilters:
         
         # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:
-            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
-        
-        
-        
-        
+            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')      
     
 LF = LinearFilters()
