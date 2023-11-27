@@ -8,8 +8,12 @@ class NonLinearFilters:
         :param image: The image to be convolved
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
+            - 'adaptive_weighted_median',
+            - 'truncated_median',
             - 'min',
             - 'max',
+            - 'midpoint',
+            - 'alpha_trimmed_mean',
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use. Possible values:
             - 'constant',
@@ -65,8 +69,12 @@ class NonLinearFilters:
         
         :param kernel_type: The type of kernel to convolve the image with. Possible values:
             - 'median',
+            - 'adaptive_weighted_median',
+            - 'truncated_median',
             - 'min',
             - 'max',
+            - 'midpoint',
+            - 'alpha_trimmed_mean',
         :param roi: The region of interest
 
         :return: The calculated value
@@ -75,10 +83,18 @@ class NonLinearFilters:
         """
         if kernel_type == 'median':
             return self.applyMedianFilter(roi)
+        elif kernel_type == 'adaptive_weighted_median':
+            return self.applyAdaptiveWeightedMedianFilter(roi)
+        elif kernel_type == 'truncated_median':
+            return self.applyTruncatedMedianFilter(roi)
         elif kernel_type == 'min':
             return self.applyMinFilter(roi)
         elif kernel_type == 'max':
             return self.applyMaxFilter(roi)
+        elif kernel_type == 'midpoint':
+            return self.applyMidpointFilter(roi)
+        elif kernel_type == 'alpha_trimmed_mean':
+            return self.applyAlphaTrimmedMeanFilter(roi)
         else:
             raise Exception('Invalid kernel type.')
     
@@ -93,6 +109,116 @@ class NonLinearFilters:
 
         median = np.median(image_section)
         return median
+    
+    def applyAdaptiveWeightedMedianFilter(self, image_section, central_value=100, constant=10):
+        """
+        Performs adaptive weighted median filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        :param central_value: The central value of the weights
+        :param constant: The constant
+        
+        :return: The filtered image section
+        """
+
+        # Get the height and width of the image section
+        height, width = image_section.shape
+
+        weights = np.zeros((height, width))
+
+        # Set the center of the weights to the central value
+        weights[int(height / 2), int(width / 2)] = central_value
+
+        # Get array of distances from the center
+        distances = np.zeros((height, width))
+        for i in range(height):
+            for j in range(width):
+                distances[i, j] = np.sqrt((i - int(height / 2)) ** 2 + (j - int(width / 2)) ** 2)
+
+        # Flatten the image
+        flattened_image_section = image_section.flatten()
+
+        # Sort the pixels
+        flattened_image_section.sort()
+
+        # Calculate the standard deviation
+        standard_deviation = np.std(flattened_image_section)
+        # Calculate the mean
+        mean = np.mean(flattened_image_section)
+        # Calculate the weight
+        if mean == 0:
+            # If the mean is 0, then the weights are equal to the central value
+            weights = central_value
+        else:
+            weights = central_value - (constant * distances * standard_deviation / mean)
+
+        # floor the weights and convert them to integers
+        weights = np.floor(weights).astype(int).flatten()
+
+        # check if any of the weights are less than 0
+        if np.any(weights < 0):
+            # If any of the weights are less than 0, then set them to 0
+            weights[weights < 0] = 0
+
+        # Repeat the pixels according to their weights
+        repeated_pixels = np.repeat(flattened_image_section, weights)
+
+        # Calculate the weighted median
+        weighted_median = np.median(repeated_pixels)
+
+        return weighted_median
+    
+    def applyTruncatedMedianFilter(self, image_section):
+        """
+        Performs truncated median filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+
+        # Flatten the image
+        flattened_image_section = image_section.flatten()
+
+        # Sort the pixels
+        flattened_image_section.sort()
+
+        # Get the minimum and maximum values
+        min_value = np.min(flattened_image_section)
+        max_value = np.max(flattened_image_section)
+
+        # Get the median value
+        median_value = np.median(flattened_image_section)
+
+        # Calculate the difference between the median and the minimum value
+        difference_median_min = np.abs(median_value - min_value)
+
+        # Calculate the difference between the median and the maximum value
+        difference_median_max = np.abs(median_value - max_value)
+
+        if difference_median_min > difference_median_max:
+            # Calculate the lower threshold
+            lower_threshold = median_value - difference_median_max
+            
+            # Get the pixels that are greater than the lower threshold
+            truncated_image = flattened_image_section[flattened_image_section > lower_threshold]
+        elif difference_median_min < difference_median_max:
+            # Calculate the upper threshold
+            upper_threshold = median_value + difference_median_min
+            
+            # Get the pixels that are less than the upper threshold
+            truncated_image = flattened_image_section[flattened_image_section < upper_threshold]
+        else:
+            # If the difference between the median and the minimum value is equal
+            # to the difference between the median and the maximum value, then
+            # the median is eqaul to the mode
+            truncated_image = flattened_image_section
+
+        # Calculate the truncated median
+        truncated_median = np.median(truncated_image)
+
+        return truncated_median
+
     
     def applyMinFilter(self, image_section):
         """
@@ -117,6 +243,52 @@ class NonLinearFilters:
 
         max_value = np.max(image_section)
         return max_value
+    
+    def applyMidpointFilter(self, image_section):
+        """
+        Performs midpoint filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        
+        :return: The filtered image section
+        """
+
+        min_value = np.min(image_section)
+        max_value = np.max(image_section)
+        midpoint = (min_value + max_value) / 2
+        return midpoint
+    
+    def applyAlphaTrimmedMeanFilter(self, image_section, d=2):
+        """
+        Performs alpha-trimmed mean filtering on an image section.
+        
+        :param image_section: The image section to be filtered
+        :param d: The number of pixels to be trimmed
+        
+        :return: The filtered image section
+        """
+
+        # Get the height and width of the image section
+        height, width = image_section.shape
+
+        # Get the number of pixels to be trimmed
+        num_pixels_to_be_trimmed = int(d // 2)
+
+        # Get the total number of pixels
+        total_pixels = height * width
+
+        flattened_image_section = image_section.flatten()
+
+        # Sort the pixels
+        flattened_image_section.sort()
+
+        # Trim the pixels
+        trimmed_pixels = flattened_image_section[num_pixels_to_be_trimmed:total_pixels - num_pixels_to_be_trimmed]
+
+        # Calculate the alpha-trimmed mean
+        alpha_trimmed_mean = (1 / (width * height - d)) * np.mean(trimmed_pixels)
+
+        return alpha_trimmed_mean
     
     
 NLF = NonLinearFilters()
