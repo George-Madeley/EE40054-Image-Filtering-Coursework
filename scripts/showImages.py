@@ -57,4 +57,5 @@ for image_name in image_names:
             plt.axis('off')
             subplot_index += 1
         plt.savefig(f'./img/{image_name}-{filter_name}.png', bbox_inches='tight', dpi=600)
+        plt.clf()
 
