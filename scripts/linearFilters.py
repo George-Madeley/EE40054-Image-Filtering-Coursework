@@ -7,7 +7,7 @@ class LinearFilters:
     Class for applying linear filters to an image
     """
 
-    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0, stdiv=1.0):
+    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0):
         """
         Applies a linear filter to an image
         
@@ -23,17 +23,16 @@ class LinearFilters:
         :param kernel_size: The size of the kernel
         :param order: The order of the filter
         :param cutoff: The cutoff frequency
-        :param stdiv: The standard deviation of the Gaussian filter
         
         :return: The filtered image
         """
 
         # Check for errors in the parameters
-        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff, stdiv=stdiv)
+        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff)
 
         # get the kernel
         if filter_name == 'gaussian':
-            kernel = self.getGaussianKernel(kernel_size, stdiv)
+            kernel = self.getGaussianKernel(kernel_size)
             return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'box':
             kernel = self.getBoxKernel(kernel_size)
@@ -56,17 +55,19 @@ class LinearFilters:
         else:
             raise Exception('Invalid filter name.')
 
-    def getGaussianKernel(self, size, stdiv):
+    def getGaussianKernel(self, size):
         """
         Creates a Gaussian kernel of size (size x size) with standard deviation sigma
 
         :param size: The size of the kernel
-        :param stdiv: The standard deviation of the kernel
 
         :return: The Gaussian kernel
         """
         # Check for errors in the parameters
-        self.checkErrors(size, 'constant', stdiv=stdiv)
+        self.checkErrors(size, 'constant')
+
+        # Calculates the standard deviation
+        stdiv = (size - 1) / 6
 
         # Creates a kernel of zeros
         kernel = np.zeros(shape=(size, size))
@@ -74,12 +75,13 @@ class LinearFilters:
         center = (size - 1) / 2
         # Creates a vector of values from -center to center
         vector = np.linspace(-center, center, size)
+        vector = vector ** 2
+        # Create a matrix of distances from the center
+        distances = np.sqrt(np.add.outer(vector, vector))
         # Calculates the constant for the Gaussian function
         constant = 1 / (2 * math.pi * stdiv ** 2)
         # Calculates the Gaussian filter
-        gaussian_fitler = constant * np.exp(-0.5 * vector ** 2 / stdiv ** 2)
-        # Creates the Gaussian kernel
-        kernel = np.outer(gaussian_fitler, gaussian_fitler)
+        kernel = constant * np.exp(-0.5 * distances ** 2 / stdiv ** 2)
         # Normalizes the kernel
         kernel /= np.sum(kernel)
         return kernel
@@ -121,10 +123,13 @@ class LinearFilters:
         center = (size - 1) / 2
         # Creates a vector of values from -center to center
         vector = np.linspace(-center, center, size)
+        vector = vector ** 2
+        # Create a matrix of distances from the center
+        distances = np.sqrt(np.add.outer(vector, vector))
         # Calculates the Butterworth low pass filter
-        butterworth_low_pass_filter = 1 / (1 + (vector / cutoff) ** (2 * order))
-        # Creates the Butterworth low pass filter
-        kernel = np.outer(butterworth_low_pass_filter, butterworth_low_pass_filter)
+        kernel = 1 / (1 + (distances / cutoff) ** (2 * order))
+        # Normalizes the kernel
+        kernel /= np.sum(kernel)
         return kernel
     
     def getLowPassFilter(self, size, cutoff):
@@ -285,7 +290,7 @@ class LinearFilters:
                 
         return convolved_image
 
-    def checkErrors(self, kernel_size, padding, order=None, cutoff=None, stdiv=None):
+    def checkErrors(self, kernel_size, padding, order=None, cutoff=None):
         """
         Checks for errors in the LinearFilters class
 
@@ -293,18 +298,14 @@ class LinearFilters:
         :param padding: The type of padding to use
         :param order: The order of the filter
         :param cutoff: The cutoff frequency
-        :param stdiv: The standard deviation of the Gaussian filter
 
         :raises TypeError: If the kernel size is not an integer
         :raises TypeError: If the order is not an integer
         :raises TypeError: If the cutoff frequency is not a float
-        :raises TypeError: If the standard deviation is not a float
 
         :raises ValueError: If the kernel size is even
         :raises ValueError: If the padding type is invalid
         :raises ValueError: If the kernel size is less than 1
-        :raises ValueError: If the standard deviation is less than 0
-        :raises ValueError: If the order is less than 1
         :raises ValueError: If the cutoff frequency is less than 0
         """
 
@@ -321,35 +322,19 @@ class LinearFilters:
         elif kernel_size is not None:
             raise TypeError('Kernel size must be an integer.')
         
-        # Check for errors related to the order.
-        # Check if the order is an integer
-        if isinstance(order, int):
-            # Check if the order is less than 1
-            if order < 1 and order:
-                raise ValueError('Order must be greater than 0.')
-        # If the order is not an integer, raise an error.
-        elif order is not None:
+        # Check that the order is an integer
+        if not isinstance(order, int) and order is not None:
             raise TypeError('Order must be an integer.')
         
         # Check for errors related to the cutoff frequency.
         # Check if the cutoff frequency is a float
         if isinstance(cutoff, float):
             # Check if the cutoff frequency is less than 0
-            if cutoff < 0 and cutoff:
+            if cutoff < 0:
                 raise ValueError('Cutoff frequency must be greater than 0.')
         # If the cutoff frequency is not a float, raise an error.
         elif cutoff is not None:
             raise TypeError('Cutoff frequency must be a float.')
-        
-        # Check for errors related to the standard deviation.
-        # Check if the standard deviation is a float
-        if isinstance(stdiv, float):
-            # Check if the standard deviation is less than 0
-            if stdiv < 0 and stdiv:
-                raise ValueError('Standard deviation must be greater than 0.')
-        # If the standard deviation is not a float, raise an error.
-        elif stdiv is not None:
-            raise TypeError('Standard deviation must be a float.')
         
         # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:
