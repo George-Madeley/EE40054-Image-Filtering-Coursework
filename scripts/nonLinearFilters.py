@@ -129,11 +129,13 @@ class NonLinearFilters:
         # Set the center of the weights to the central value
         weights[int(height / 2), int(width / 2)] = central_value
 
-        # Get array of distances from the center
-        distances = np.zeros((height, width))
-        for i in range(height):
-            for j in range(width):
-                distances[i, j] = np.sqrt((i - int(height / 2)) ** 2 + (j - int(width / 2)) ** 2)
+        # Calculates the center of the kernel
+        center = (width - 1) / 2
+        # Creates a vector of values from -center to center
+        vector = np.linspace(-center, center, width)
+        vector = vector ** 2
+        # Create a matrix of distances from the center
+        distances = np.sqrt(np.add.outer(vector, vector))
 
         # Flatten the image
         flattened_image_section = image_section.flatten()
