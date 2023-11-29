@@ -140,9 +140,6 @@ class NonLinearFilters:
         # Flatten the image
         flattened_image_section = image_section.flatten()
 
-        # Sort the pixels
-        flattened_image_section.sort()
-
         # Calculate the standard deviation
         standard_deviation = np.std(flattened_image_section)
         # Calculate the mean
@@ -164,6 +161,9 @@ class NonLinearFilters:
 
         # Repeat the pixels according to their weights
         repeated_pixels = np.repeat(flattened_image_section, weights)
+        
+        # Sort the repeated pixels
+        repeated_pixels.sort()
 
         # Calculate the weighted median
         weighted_median = np.median(repeated_pixels)
