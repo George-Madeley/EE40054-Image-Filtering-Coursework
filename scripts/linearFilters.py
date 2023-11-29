@@ -288,51 +288,25 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
 
         :raises ValueError: If the order is less than or equal to 0
         """
-        # set numpy error handling to raise errors
-        np.seterr(all='raise')
+        # set numpy error to raise
+        np.seterr('raise')
 
-
-        # check if any values in the image section are not 0
-        if np.any(image_section != 0):
-            # A divide by 0 error will occur if the order + 1 is less than -2
-            # if the pixel values are 0. Therefore, the operation is not performed
-            # on pixels with value 0 unless the order + 1 is 0 as division error
-            # will not occur and the result of 0 ** 0  is 1.
-            if order + 1 != 0:
-                power = np.power(image_section, order + 1, where=image_section!=0, dtype=np.float64)
-                numerator = np.sum(power, initial=0)
-            else:
-                power = np.power(image_section, order + 1, dtype=np.float64)
-                numerator = np.sum(power, initial=0)
-
-            # A divide by 0 error will occur if the order is less than -1
-            # if the pixel values are 0. Therefore, the operation is not performed
-            # on pixels with value 0 unless the order is 0 as division error
-            # will not occur and the result of 0 ** 0  is 1.
-            if order != 0:
-                power = np.power(image_section, order, where=image_section!=0, dtype=np.float64)
-                denominator = np.sum(power, initial=0)
-            else:
-                power = np.power(image_section, order, dtype=np.float64)
-                denominator = np.sum(power, initial=0)
+        # If order + 1 is 0, then the power is 1. Else, calculate the power.
+        if order + 1 == 0:
+            power = np.ones_like(image_section)
         else:
-            if order + 1 == 0:
-                numerator = image_section.size
-            else:
-                numerator = 0
-
-            if order == 0:
-                denominator = image_section.size
-            else:
-                denominator = 0
+            power = np.power(image_section, order + 1, out=np.zeros_like(image_section), where=image_section!=0.0)
+        numerator = np.sum(power, initial=0)
         
+        # If order is 0, then the power is 1. Else, calculate the power.
+        if order == 0:
+            power = np.ones_like(image_section)
+        else:
+            power = np.power(image_section, order, out=np.zeros_like(image_section), where=image_section!=0.0)
+        denominator = np.sum(power, initial=0)
+
         if denominator == 0:
             return 0
-        
-        # if both the numerator and denominator are inf, the result is 1
-        if np.isinf(numerator) and np.isinf(denominator):
-            return 1
-
         contra_harmonic_mean = numerator / denominator
 
         return contra_harmonic_mean
