@@ -291,18 +291,12 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         # set numpy error to raise
         np.seterr('raise')
 
-        # If order + 1 is 0, then the power is 1. Else, calculate the power.
-        if order + 1 == 0:
-            power = np.ones_like(image_section)
-        else:
-            power = np.power(image_section, order + 1, out=np.zeros_like(image_section), where=image_section!=0.0)
+       
+        power = np.power(image_section, order + 1, out=np.zeros_like(image_section), where=image_section!=0.0)
         numerator = np.sum(power, initial=0)
         
-        # If order is 0, then the power is 1. Else, calculate the power.
-        if order == 0:
-            power = np.ones_like(image_section)
-        else:
-            power = np.power(image_section, order, out=np.zeros_like(image_section), where=image_section!=0.0)
+        
+        power = np.power(image_section, order, out=np.zeros_like(image_section), where=image_section!=0.0)
         denominator = np.sum(power, initial=0)
 
         if denominator == 0:
