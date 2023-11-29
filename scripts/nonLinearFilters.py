@@ -1,12 +1,14 @@
 import numpy as np
 
-class NonLinearFilters:
-    def applyFilter(self, image, kernel_type='median', kernel_size=3, padding='constant'):
+from iSpatialFilters import ISpatialFilters
+
+class NonLinearFilters(ISpatialFilters):
+    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0):
         """
-        Performs a 2D convolution on an image using a kernel.
+        Applies a non-linear filter to an image
 
         :param image: The image to be convolved
-        :param kernel_type: The type of kernel to convolve the image with. Possible values:
+        :param filter_name: The type of kernel to convolve the image with. Possible values:
             - 'median',
             - 'adaptive_weighted_median',
             - 'truncated_median',
@@ -15,29 +17,44 @@ class NonLinearFilters:
             - 'midpoint',
             - 'alpha_trimmed_mean',
         :param kernel_size: The size of the kernel
-        :param padding: The type of padding to use. Possible values:
-            - 'constant',
-            - 'edge',
-            - 'linear_ramp',
+        :param order: The order of the filter
+        :param cutoff: The cutoff frequency
 
-        :return: The convolved image
-
-        :raises ValueError: If the kernel size is even
-        :raises ValueError: If the padding type is invalid
-        :raises ValueError: If the kernel size is less than 1
+        :return: The filtered image
         """
 
-        # Check that the kernel size is odd. If the kernel size is even, raise an exception.
-        if kernel_size % 2 == 0:
-            raise ValueError('Kernel size must be odd.')
+        # Check for errors in the parameters
+        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff)
         
-        # Check that the padding type is valid. If the padding type is invalid, raise an exception.
-        if padding not in ['constant', 'edge', 'linear_ramp']:
-            raise ValueError('Invalid padding type.')
+        if filter_name == 'median':
+            filter_function = lambda roi : self.applyMedianFilter(roi)
+        elif filter_name == 'adaptive_weighted_median':
+            filter_function = lambda roi : self.applyAdaptiveWeightedMedianFilter(roi)
+        elif filter_name == 'truncated_median':
+            filter_function = lambda roi : self.applyTruncatedMedianFilter(roi)
+        elif filter_name == 'min':
+            filter_function = lambda roi : self.applyMinFilter(roi)
+        elif filter_name == 'max':
+            filter_function = lambda roi : self.applyMaxFilter(roi)
+        elif filter_name == 'midpoint':
+            filter_function = lambda roi : self.applyMidpointFilter(roi)
+        elif filter_name == 'alpha_trimmed_mean':
+            filter_function = lambda roi : self.applyAlphaTrimmedMeanFilter(roi)
+        else:
+            raise Exception('Invalid filter name.')
+        return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+    
+    def calculateSpatialDomainConvolution(self, image, kernel_size, filter_function, padding='constant'):
+        """
+        Performs a convolution on an image using a kernel using the spatial domain algorithm.
         
-        # Check that the kernel size is greater than 0. If the kernel size is less than 1, raise an exception.
-        if kernel_size < 1:
-            raise ValueError('Kernel size must be greater than 0.')
+        :param image: The image to be convolved
+        :param kernel_size: The size of the kernel
+        :param filter_function: The filter function to be applied
+        :param padding: The type of padding to use. Possible values:
+        
+        :return: The convolved image
+        """
 
         # Get the height and width of the image
         height, width = image.shape
@@ -58,45 +75,10 @@ class NonLinearFilters:
                 roi = padded_image[i:i+kernel_size, j:j+kernel_size]
 
                 # Apply the desired kernel type
-                convolved_value = self.calculateConvolvedValue(kernel_type, roi)
+                convolved_value = filter_function(roi)
                 convolved_image[i, j] = convolved_value
                 
         return convolved_image
-
-    def calculateConvolvedValue(self, kernel_type, roi):
-        """
-        Applies the desired filter to the region of interest (ROI).
-        
-        :param kernel_type: The type of kernel to convolve the image with. Possible values:
-            - 'median',
-            - 'adaptive_weighted_median',
-            - 'truncated_median',
-            - 'min',
-            - 'max',
-            - 'midpoint',
-            - 'alpha_trimmed_mean',
-        :param roi: The region of interest
-
-        :return: The calculated value
-
-        :raises Exception: If the kernel type is invalid
-        """
-        if kernel_type == 'median':
-            return self.applyMedianFilter(roi)
-        elif kernel_type == 'adaptive_weighted_median':
-            return self.applyAdaptiveWeightedMedianFilter(roi)
-        elif kernel_type == 'truncated_median':
-            return self.applyTruncatedMedianFilter(roi)
-        elif kernel_type == 'min':
-            return self.applyMinFilter(roi)
-        elif kernel_type == 'max':
-            return self.applyMaxFilter(roi)
-        elif kernel_type == 'midpoint':
-            return self.applyMidpointFilter(roi)
-        elif kernel_type == 'alpha_trimmed_mean':
-            return self.applyAlphaTrimmedMeanFilter(roi)
-        else:
-            raise Exception('Invalid kernel type.')
     
     def applyMedianFilter(self, image_section):
         """
@@ -293,5 +275,55 @@ class NonLinearFilters:
 
         return alpha_trimmed_mean
     
-    
+    def checkErrors(self, kernel_size, padding, order=None, cutoff=None):
+        """
+        Checks for errors in the LinearFilters class
+
+        :param kernel_size: The size of the kernel
+        :param padding: The type of padding to use
+        :param order: The order of the filter
+        :param cutoff: The cutoff frequency
+
+        :raises TypeError: If the kernel size is not an integer
+        :raises TypeError: If the order is not an integer
+        :raises TypeError: If the cutoff frequency is not a float
+
+        :raises ValueError: If the kernel size is even
+        :raises ValueError: If the padding type is invalid
+        :raises ValueError: If the kernel size is less than 1
+        :raises ValueError: If the cutoff frequency is less than 0
+        """
+
+        # Check of errors related to the kernel size.
+        # Check if the kernel size is an integer
+        if isinstance(kernel_size, int):
+            # Check if the kernel size is even
+            if kernel_size % 2 == 0:
+                raise ValueError('Kernel size must be odd.')
+            # Check if the kernel size is less than 1
+            elif kernel_size < 1:
+                raise ValueError('Kernel size must be greater than 0.')
+        # If the kernel size is not an integer, raise an error.
+        elif kernel_size is not None:
+            raise TypeError('Kernel size must be an integer.')
+        
+        # Check that the order is an integer
+        if not isinstance(order, int) and order is not None:
+            raise TypeError('Order must be an integer.')
+        
+        # Check for errors related to the cutoff frequency.
+        # Check if the cutoff frequency is a float
+        if isinstance(cutoff, float):
+            # Check if the cutoff frequency is less than 0
+            if cutoff < 0:
+                raise ValueError('Cutoff frequency must be greater than 0.')
+        # If the cutoff frequency is not a float, raise an error.
+        elif cutoff is not None:
+            raise TypeError('Cutoff frequency must be a float.')
+        
+        # Check for errors related to the padding type.
+        if padding not in ['constant', 'edge', 'linear_ramp']:
+            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
+
+
 NLF = NonLinearFilters()
