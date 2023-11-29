@@ -9,7 +9,7 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
     Class for applying linear filters to an image
     """
 
-    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0):
+    def applyFilter(self, image, filter_name, kernel_size, **kwargs):
         """
         Applies a linear filter to an image
         
@@ -23,14 +23,15 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
             - 'harmonic_mean',
             - 'contra_harmonic_mean'
         :param kernel_size: The size of the kernel
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter. Possible values are:
+            - 'order': The order of the filter. Required for 'butterworth_low_pass' and 'contra_harmonic_mean'
+            - 'cutoff': The cutoff frequency. Required for 'butterworth_low_pass' and 'low_pass'
         
         :return: The filtered image
         """
 
         # Check for errors in the parameters
-        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff)
+        self.checkErrors(kernel_size, 'constant', **kwargs)
 
         # get the kernel
         if filter_name == 'gaussian':
@@ -40,9 +41,12 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
             kernel = self.getBoxKernel(kernel_size)
             return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'butterworth_low_pass':
+            order = kwargs.get('order', 2)
+            cutoff = kwargs.get('cutoff', 50.0)
             kernel = self.getButterworthLowPassFilter(kernel_size, cutoff, order)
             return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'low_pass':
+            cutoff = kwargs.get('cutoff', 50.0)
             kernel = self.getLowPassFilter(kernel_size, cutoff)
             return self.calculateFrequencyDomainConvolution(image, kernel)
         elif filter_name == 'geometric_mean':
@@ -52,6 +56,7 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
             filter_function = lambda roi: self.applyHarmonicMeanFilter(roi)
             return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
         elif filter_name == 'contra_harmonic_mean':
+            order = kwargs.get('order', 2)
             filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, order)
             return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
         else:
@@ -292,14 +297,13 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
 
         return contra_harmonic_mean
 
-    def checkErrors(self, kernel_size, padding, order=None, cutoff=None):
+    def checkErrors(self, kernel_size, padding, **kwargs):
         """
         Checks for errors in the LinearFilters class
 
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter
 
         :raises TypeError: If the kernel size is not an integer
         :raises TypeError: If the order is not an integer
@@ -324,19 +328,26 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         elif kernel_size is not None:
             raise TypeError('Kernel size must be an integer.')
         
-        # Check that the order is an integer
-        if not isinstance(order, int) and order is not None:
-            raise TypeError('Order must be an integer.')
+        # Check for errors related to the order.
+        # Check if the order is in the kwargs
+        if 'order' in kwargs:
+            order = kwargs['order']
+            # Check that the order is an integer
+            if not isinstance(order, int) and order is not None:
+                raise TypeError('Order must be an integer.')
         
         # Check for errors related to the cutoff frequency.
-        # Check if the cutoff frequency is a float
-        if isinstance(cutoff, float):
-            # Check if the cutoff frequency is less than 0
-            if cutoff < 0:
-                raise ValueError('Cutoff frequency must be greater than 0.')
-        # If the cutoff frequency is not a float, raise an error.
-        elif cutoff is not None:
-            raise TypeError('Cutoff frequency must be a float.')
+        # Check if the cutoff frequency is in the kwargs
+        if 'cutoff' in kwargs:
+            cutoff = kwargs['cutoff']
+            # Check if the cutoff frequency is a float
+            if isinstance(cutoff, float):
+                # Check if the cutoff frequency is less than 0
+                if cutoff < 0:
+                    raise ValueError('Cutoff frequency must be greater than 0.')
+            # If the cutoff frequency is not a float, raise an error.
+            elif cutoff is not None:
+                raise TypeError('Cutoff frequency must be a float.')
         
         # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:

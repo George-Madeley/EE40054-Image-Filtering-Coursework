@@ -7,7 +7,7 @@ class EdgeDetector(IFrequencyFilters):
     """
     Class for applying edge detection filters to an image
     """
-    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0):
+    def applyFilter(self, image, filter_name, kernel_size, **kwargs):
         """
         Applies a linear filter to an image
         
@@ -19,14 +19,13 @@ class EdgeDetector(IFrequencyFilters):
             - 'magnitude',
             - 'direction',
         :param kernel_size: The size of the kernel
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter
         
         :return: The filtered image
         """
 
         # Check for errors in the parameters
-        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff)
+        self.checkErrors(kernel_size, 'constant', **kwargs)
 
         # get the kernel
         if filter_name == 'horizontal':
@@ -151,5 +150,37 @@ class EdgeDetector(IFrequencyFilters):
         edge_direction = np.arctan2(horizontal_edges, vertical_edges)
         
         return edge_direction
+    
+    def checkErrors(self, kernel_size, padding, **kwargs):
+        """
+        Checks for errors in the LinearFilters class
+
+        :param kernel_size: The size of the kernel
+        :param padding: The type of padding to use
+        :param kwargs: The arguments for the filter
+
+        :raises TypeError: If the kernel size is not an integer
+
+        :raises ValueError: If the kernel size is even
+        :raises ValueError: If the padding type is invalid
+        :raises ValueError: If the kernel size is less than 1
+        """
+
+        # Check of errors related to the kernel size.
+        # Check if the kernel size is an integer
+        if isinstance(kernel_size, int):
+            # Check if the kernel size is even
+            if kernel_size % 2 == 0:
+                raise ValueError('Kernel size must be odd.')
+            # Check if the kernel size is less than 1
+            elif kernel_size < 1:
+                raise ValueError('Kernel size must be greater than 0.')
+        # If the kernel size is not an integer, raise an error.
+        elif kernel_size is not None:
+            raise TypeError('Kernel size must be an integer.')
+        
+        # Check for errors related to the padding type.
+        if padding not in ['constant', 'edge', 'linear_ramp']:
+            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
 
 ED = EdgeDetector()

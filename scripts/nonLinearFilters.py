@@ -3,7 +3,7 @@ import numpy as np
 from iSpatialFilters import ISpatialFilters
 
 class NonLinearFilters(ISpatialFilters):
-    def applyFilter(self, image, filter_name, kernel_size, order=2, cutoff=50.0):
+    def applyFilter(self, image, filter_name, kernel_size, **kwargs):
         """
         Applies a non-linear filter to an image
 
@@ -17,19 +17,23 @@ class NonLinearFilters(ISpatialFilters):
             - 'midpoint',
             - 'alpha_trimmed_mean',
         :param kernel_size: The size of the kernel
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter. Possible values:
+            - 'central_value': The central value of the weights (for adaptive weighted median filter)
+            - 'constant': The constant (for adaptive weighted median filter)
+            - 'd': The number of pixels to be trimmed (for alpha-trimmed mean filter)
 
         :return: The filtered image
         """
 
         # Check for errors in the parameters
-        self.checkErrors(kernel_size, 'constant', order=order, cutoff=cutoff)
+        self.checkErrors(kernel_size, 'constant', **kwargs)
         
         if filter_name == 'median':
             filter_function = lambda roi : self.applyMedianFilter(roi)
         elif filter_name == 'adaptive_weighted_median':
-            filter_function = lambda roi : self.applyAdaptiveWeightedMedianFilter(roi)
+            central_value = kwargs.get('central_value', 100)
+            constant = kwargs.get('constant', 10)
+            filter_function = lambda roi : self.applyAdaptiveWeightedMedianFilter(roi, central_value, constant)
         elif filter_name == 'truncated_median':
             filter_function = lambda roi : self.applyTruncatedMedianFilter(roi)
         elif filter_name == 'min':
@@ -39,7 +43,8 @@ class NonLinearFilters(ISpatialFilters):
         elif filter_name == 'midpoint':
             filter_function = lambda roi : self.applyMidpointFilter(roi)
         elif filter_name == 'alpha_trimmed_mean':
-            filter_function = lambda roi : self.applyAlphaTrimmedMeanFilter(roi)
+            d = kwargs.get('d', 2)
+            filter_function = lambda roi : self.applyAlphaTrimmedMeanFilter(roi, d)
         else:
             raise Exception('Invalid filter name.')
         return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
@@ -275,18 +280,15 @@ class NonLinearFilters(ISpatialFilters):
 
         return alpha_trimmed_mean
     
-    def checkErrors(self, kernel_size, padding, order=None, cutoff=None):
+    def checkErrors(self, kernel_size, padding, **kwargs):
         """
         Checks for errors in the LinearFilters class
 
         :param kernel_size: The size of the kernel
         :param padding: The type of padding to use
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter
 
         :raises TypeError: If the kernel size is not an integer
-        :raises TypeError: If the order is not an integer
-        :raises TypeError: If the cutoff frequency is not a float
 
         :raises ValueError: If the kernel size is even
         :raises ValueError: If the padding type is invalid
@@ -307,19 +309,39 @@ class NonLinearFilters(ISpatialFilters):
         elif kernel_size is not None:
             raise TypeError('Kernel size must be an integer.')
         
-        # Check that the order is an integer
-        if not isinstance(order, int) and order is not None:
-            raise TypeError('Order must be an integer.')
+        # Check that the central_value is a key in kwargs
+        if 'central_value' in kwargs:
+            # Get the central_value
+            central_value = kwargs.get('central_value')
+            # Check that the central_value is a float
+            if not isinstance(central_value, float) and central_value is not None:
+                raise TypeError('central_value must be a float.')
         
-        # Check for errors related to the cutoff frequency.
-        # Check if the cutoff frequency is a float
-        if isinstance(cutoff, float):
-            # Check if the cutoff frequency is less than 0
-            if cutoff < 0:
-                raise ValueError('Cutoff frequency must be greater than 0.')
-        # If the cutoff frequency is not a float, raise an error.
-        elif cutoff is not None:
-            raise TypeError('Cutoff frequency must be a float.')
+        # Check that constant is a key in kwargs
+        if 'constant' in kwargs:
+            # Get the constant
+            constant = kwargs.get('constant')
+            # Check if the constant is a float
+            if isinstance(constant, float):
+                # Check if the constant is less than 0
+                if constant < 0:
+                    raise ValueError('constant must be greater than 0.')
+            # If the constant is not a float, raise an error.
+            elif constant is not None:
+                raise TypeError('constant must be a float.')
+            
+        # Check that d is a key in kwargs
+        if 'd' in kwargs:
+            # Get d
+            d = kwargs.get('d')
+            # Check if d is an integer
+            if isinstance(d, int):
+                # Check if d is less than 0
+                if d < 0:
+                    raise ValueError('d must be greater than 0.')
+            # If d is not an integer, raise an error.
+            elif d is not None:
+                raise TypeError('d must be an integer.')
         
         # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:

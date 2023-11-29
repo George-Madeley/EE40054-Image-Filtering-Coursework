@@ -2,15 +2,14 @@ from abc import ABC, abstractmethod
 
 class IFrequencyFilters(ABC):
     @abstractmethod
-    def applyFilter(self, image, filter_name: str, kernel_size: int, order=2, cutoff=50.0):
+    def applyFilter(self, image, filter_name: str, kernel_size: int, **kwargs):
         """
         Applies a linear filter to an image
         
         :param image: The image to be filtered
         :param filter_name: The name of the filter
         :param kernel_size: The size of the kernel
-        :param order: The order of the filter
-        :param cutoff: The cutoff frequency
+        :param kwargs: The arguments for the filter
         
         :return: The filtered image
         """
