@@ -17,57 +17,67 @@ def main():
     Main function
     """
 
+
+
     arguments = sys.argv[1:]
     if len(arguments) != 1:
         print('Usage: python main.py <image>')
         sys.exit(1)
 
-    if arguments[0] == 'edge':
+
+    if arguments[0] == 'filter':
+        image_paths = ['./img/foetus.png']
+        for image_path in image_paths:
+
+            linear_filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass', 'geometric_mean', 'harmonic_mean', 'contra_harmonic_mean']
+            non_linear_filters = ['median', 'adaptive_weighted_median', 'truncated_median', 'max', 'min', 'midpoint', 'alpha_trimmed_mean']
+
+            # Test the linear filters
+            testFilters(image_path, LF, linear_filters)
+
+            # Test the non-linear filters
+            testFilters(image_path, NLF, non_linear_filters)
+    elif arguments[0] == 'edge':
         testEdgeDetectors()
         sys.exit(0)
     else:
-        image_path = arguments[0]
-
-        # get image name without the extension
-        image_name = os.path.splitext(os.path.basename(image_path))[0]
-
-        # Read the image
-        image = plt.imread(image_path)
-
-        MIN_KERNEL_SIZE = 3
-        MAX_KERNEL_SIZE = 15
+        # raise an error if the argument is not recognized
+        raise ValueError('Argument not recognized. Use \'filter\' or \'edge\'.')
         
 
-        # Test the linear filters
-        testLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
-
-        # Test the non-linear filters
-        testNonLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
-
-def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
+def testFilters(source_image_path, F, filters, min_kernel_size=3, max_kernel_size=15, padding='constant'):
     """
-    Tests the linear filters
+    Tests the filters
     
-    :param source_image: The image to be filtered
-    :param source_image_name: The name of the image
+    :param source_image_path: The path to the image to be filtered
+    :param F: The clas that applies the given filter.
+    :param filters: The names of the filters
     :param min_kernel_size: The minimum kernel size
     :param max_kernel_size: The maximum kernel size
+    :param padding: The type of padding to use
     """
+    
+    # get image name without the extension
+    source_image_name = os.path.splitext(os.path.basename(source_image_path))[0]
+
+    # Read the image
+    source_image = plt.imread(source_image_path)
 
     results_csv_file_name = getResultsFile()
 
-    filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass', 'geometric_mean', 'harmonic_mean', 'contra_harmonic_mean']
+    filter_type = 'linear' if F == LF else 'nonlinear'
+
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
     for filter_name in filters:
         for kernel_size in kernel_sizes:
             # Get the image filename
-            dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
+            dest_image_file_name = getFileName(kernel_size, padding, 'filter', source_image_name, filter_name)
             
             # Start the timer
             start_time = time.perf_counter_ns()
             # Apply the filter
-            dest_image = LF.applyFilter(source_image, filter_name, kernel_size)
+            dest_image = F.applyFilter(source_image, filter_name, kernel_size)
             # Stop the timer
             end_time = time.perf_counter_ns()
             # Calculate the runtime
@@ -77,51 +87,12 @@ def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kern
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
 
             # Print the results
-            print(f'Image: {source_image_name}\tFilter Type: linear\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
+            print(f'Image: {source_image_name}\tFilter Type: {filter_type}\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
 
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, 'linear', filter_name, kernel_size, 'constant', runtime, dest_image_file_name])
-
-def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
-    """
-    Tests the non-linear filters
-    
-    :param source_image: The image to be filtered
-    :param source_image_name: The name of the image
-    :param min_kernel_size: The minimum kernel size
-    :param max_kernel_size: The maximum kernel size
-    """
-    results_csv_file_name = getResultsFile()
-
-    filters = ['median', 'adaptive_weighted_median', 'truncated_median', 'max', 'min', 'midpoint', 'alpha_trimmed_mean']
-    kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
-
-    for filter_name in filters:
-        for kernel_size in kernel_sizes:
-            # Get the image filename
-            dest_image_file_name = getFileName(source_image_name, filter_name, kernel_size, 'constant')
-            
-            # Start the timer
-            start_time = time.perf_counter_ns()
-            # Apply the filter
-            dest_image = NLF.applyFilter(source_image, filter_name, kernel_size)
-            # Stop the timer
-            end_time = time.perf_counter_ns()
-            # Calculate the runtime
-            runtime = end_time - start_time
-
-            # Save the image
-            plt.imsave(dest_image_file_name, dest_image, cmap='gray')
-
-            # Print the results
-            print(f'Image: {source_image_name}\tFilter Type: nonlinear\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
-
-            # Write the results to the results file
-            with open(results_csv_file_name, 'a', newline='') as resultsFile:
-                csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, 'nonlinear', filter_name, kernel_size, 'constant', runtime, dest_image_file_name])
+                csvWriter.writerow([source_image_name, filter_type, filter_name, kernel_size, padding, runtime, dest_image_file_name])
 
 def testEdgeDetectors():
     """
@@ -146,17 +117,21 @@ def testEdgeDetectors():
         image = image[:, :, 0]
 
         # Get the image filename
-        magnitude_image_file_name = getFileName(image_name, f'{filter_name}-edge', kernel_size, f'{padding}-magnitude')
-        direction_image_file_name = getFileName(image_name, f'{filter_name}-edge', kernel_size, f'{padding}-direction')
+        magnitude_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'magnitude')
+        direction_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'direction')
+        combined_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'combined')
         
         # Apply the filter
         magnitude_image = ED.applyFilter(image, 'magnitude', kernel_size)
         direction_image = ED.applyFilter(image, 'direction', kernel_size)
+        combined_image = magnitude_image * direction_image
 
         # Save the image
         plt.imsave(magnitude_image_file_name, magnitude_image, cmap='gray')
         # Save the directional image using a rainbow colormap
         plt.imsave(direction_image_file_name, direction_image, cmap='rainbow')
+        # Save the combined image
+        plt.imsave(combined_image_file_name, combined_image, cmap='rainbow')
 
         # Print the results
         print(f'Image: {image_name}\tFilter Type: edge\tFilter: {filter_name}')
@@ -165,6 +140,7 @@ def testEdgeDetectors():
             csvWriter = csv.writer(resultsFile)
             csvWriter.writerow([image_name, 'magnitude', filter_name, kernel_size, 'constant', -1, magnitude_image_file_name])
             csvWriter.writerow([image_name, 'direction', filter_name, kernel_size, 'constant', -1, direction_image_file_name])
+            csvWriter.writerow([image_name, 'combined', filter_name, kernel_size, 'constant', -1, combined_image_file_name])
 
     
 def getResultsFile(file_name='./results/results.csv'):
@@ -192,14 +168,13 @@ def getResultsFile(file_name='./results/results.csv'):
     return resultsFileName
 
 
-def getFileName(image_name, filter_name, kernel_size, padding):
+def getFileName(kernel_size, padding, *args):
     """
     Creates a file name for the results of the filter
 
-    :param image_name: The name of the image
-    :param filter_name: The name of the filter
     :param kernel_size: The size of the kernel
     :param padding: The type of padding
+    :param args: Any additional directories to add to the file name in the order stated.
 
     :return: The file name
     """
@@ -209,15 +184,11 @@ def getFileName(image_name, filter_name, kernel_size, padding):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Create a directory for the filter type if it doesn't exist
-    directory += image_name + '/'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    # Create a directory for the filter name if it doesn't exist
-    directory += filter_name + '/'
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    # Create a directory for very str in args if it doesn't exist
+    for arg in args:
+        directory += arg + '/'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
     # Check if the file exists by checking if the file name is already taken.
     # If it is, generate a new file name and check again.

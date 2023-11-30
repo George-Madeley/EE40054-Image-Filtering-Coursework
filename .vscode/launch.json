@@ -5,25 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "NZjers1 Image",
+            "name": "Filtering",
             "type": "python",
             "request": "launch",
             "program": "./scripts/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "./img/NZjers1.png"
-            ]
-        },
-        {
-            "name": "foetus Image",
-            "type": "python",
-            "request": "launch",
-            "program": "./scripts/main.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "./img/foetus.png"
+                "filter"
             ]
         },
         {
