@@ -34,40 +34,56 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         :return: The filtered image
         """
 
-        # Check for errors in the parameters
+        # Check for errors in the parameters.
         self.checkErrors(kernel_size, 'constant', **kwargs)
 
+        # Get the padding type to be used for the convolution
         padding = kwargs.get('padding', 'constant')
 
-        # get the kernel
+        # Some filters have kernels and can be applied using the frequency domain algorithm.
+        # Other filters do not have kernels and can only be applied using the spatial domain algorithm.
+        # Check if the filter has a kernel and if so, apply it using the frequency domain algorithm.
+        # Otherwise, apply it using the spatial domain algorithm.
         if filter_name == 'gaussian':
+            # Get the Gaussian kernel of the specified size and apply it using the frequency domain algorithm.
             kernel = self.getGaussianKernel(kernel_size)
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'box':
+            # Get the box kernel of the specified size and apply it using the frequency domain algorithm.
             kernel = self.getBoxKernel(kernel_size)
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'butterworth_low_pass':
+            # Get the order and cutoff frequency from the kwargs to be used in the Butterworth low pass filter.
             order = kwargs.get('order', 2)
             cutoff = kwargs.get('cutoff', 50.0)
+            # Get the Butterworth low pass filter of the specified size and apply it using the frequency domain algorithm.
             kernel = self.getButterworthLowPassFilter(kernel_size, cutoff, order)
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'low_pass':
+            # Get the cutoff frequency from the kwargs to be used in the low pass filter.
             cutoff = kwargs.get('cutoff', 50.0)
+            # Get the low pass filter of the specified size and apply it using the frequency domain algorithm.
             kernel = self.getLowPassFilter(kernel_size, cutoff)
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'geometric_mean':
+            # Get the filter function to be applied. The filter function is the algorithm to be applied to the region of interest (ROI).
             filter_function = lambda roi: self.applyGeometricMeanFilter(roi)
             return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
         elif filter_name == 'harmonic_mean':
+            # Get the filter function to be applied. The filter function is the algorithm to be applied to the region of interest (ROI).
             filter_function = lambda roi: self.applyHarmonicMeanFilter(roi)
             return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
         elif filter_name == 'contra_harmonic_mean':
+            # Get the order from the kwargs to be used in the contra-harmonic mean filter.
             order = kwargs.get('order', 2)
+            # Get the filter function to be applied. The filter function is the algorithm to be applied to the region of interest (ROI).
+            # The filter function is applied twice, once with the order and once with the negative order to combat both pepper and salt noise.
             filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, order)
             filtered_image =  self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
             filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, -order)
             return self.calculateSpatialDomainConvolution(filtered_image, kernel_size, filter_function, padding)
         else:
+            # If the filter name is not recognized, raise an error.
             raise Exception('Invalid filter name.')
 
     def calculateSpatialDomainConvolution(self, image, kernel_size, filter_function, padding='constant'):
@@ -261,6 +277,7 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         
         :return: The filtered image section
         """
+        # Calculate the geometric median by taking the product of the image section and taking the nth root of the product.
         product = np.product(image_section)
         geometric_median = product ** (1 / image_section.size)
 
@@ -277,10 +294,14 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         # Reciprocal of the image section. Return 0 if divide by 0.
         reciprocal = np.divide(1, image_section, out=np.zeros_like(image_section), where=image_section!=0)
         
+        # Sum of the reciprocal.
         reciprocal_sum = np.sum(reciprocal)
+
+        # Return 0 if the sum of the reciprocal is 0.
         if reciprocal_sum == 0:
             return 0
         
+        # Harmonic mean is the size of the image section divided by the sum of the reciprocal.
         harmonic_mean = image_section.size / np.sum(reciprocal)
         return harmonic_mean
     
@@ -295,19 +316,24 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
 
         :raises ValueError: If the order is less than or equal to 0
         """
-        # set numpy error to raise
-        np.seterr('raise')
-
        
+        # Calculate the numerator by taking the sum of the image section to the power of the order + 1. If the image section is 0, return 0
+        # for that pixel. NOTE: np.power(0, 0) returns 1, so we need to use the where parameter to set the value to 0. But this has not
+        # been implemented as it resulted in errors.
         power = np.power(image_section, order + 1, out=np.zeros_like(image_section), where=image_section!=0.0)
         numerator = np.sum(power, initial=0)
         
-        
+        # Calculate the denominator by taking the sum of the image section to the power of the order. If the image section is 0, return 0
+        # for that pixel. NOTE: np.power(0, 0) returns 1, so we need to use the where parameter to set the value to 0. But this has not
+        # been implemented as it resulted in errors.
         power = np.power(image_section, order, out=np.zeros_like(image_section), where=image_section!=0.0)
         denominator = np.sum(power, initial=0)
 
+        # Return 0 if the denominator is 0.
         if denominator == 0:
             return 0
+        
+        # Contra-harmonic mean is the numerator divided by the denominator.
         contra_harmonic_mean = numerator / denominator
 
         return contra_harmonic_mean
