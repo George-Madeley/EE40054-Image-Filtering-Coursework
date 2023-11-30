@@ -162,5 +162,4 @@ cython_debug/
 *.pdf
 *.docx
 
-/results
 *.docx
