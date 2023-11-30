@@ -17,20 +17,35 @@ def main():
     Main function
     """
 
-
-
+    # Get the arguments passed to the script and check if they are valid.
     arguments = sys.argv[1:]
     if len(arguments) != 1:
         print('Usage: python main.py <image>')
         sys.exit(1)
 
-
+    # If the argument is 'filter', test the linear and non-linear filters
     if arguments[0] == 'filter':
-        image_paths = ['./img/foetus.png']
+        # Test the filters on the images
+        image_paths = ['./img/NZjers1.png', './img/foetus.png']
         for image_path in image_paths:
 
-            linear_filters = ['gaussian', 'box', 'butterworth_low_pass', 'low_pass', 'geometric_mean', 'harmonic_mean', 'contra_harmonic_mean']
-            non_linear_filters = ['median', 'adaptive_weighted_median', 'truncated_median', 'max', 'min', 'midpoint', 'alpha_trimmed_mean']
+            # The linear and non-linear filters to test
+            linear_filters = [
+                'gaussian',
+                'box',
+                'butterworth_low_pass',
+                'low_pass',
+                'geometric_mean',
+                'harmonic_mean',
+                'contra_harmonic_mean']
+            non_linear_filters = [
+                'median',
+                'adaptive_weighted_median',
+                'truncated_median',
+                'max',
+                'min',
+                'midpoint',
+                'alpha_trimmed_mean']
 
             # Test the linear filters
             testFilters(image_path, LF, linear_filters)
@@ -38,17 +53,24 @@ def main():
             # Test the non-linear filters
             testFilters(image_path, NLF, non_linear_filters)
     elif arguments[0] == 'edge':
+        # Test the edge detectors
         testEdgeDetectors()
         sys.exit(0)
     else:
         # raise an error if the argument is not recognized
         raise ValueError('Argument not recognized. Use \'filter\' or \'edge\'.')
-        
 
-def testFilters(source_image_path, F, filters, min_kernel_size=3, max_kernel_size=15, padding='constant'):
+
+def testFilters(
+        source_image_path,
+        F,
+        filters,
+        min_kernel_size=3,
+        max_kernel_size=15,
+        padding='constant'):
     """
     Tests the filters
-    
+
     :param source_image_path: The path to the image to be filtered
     :param F: The clas that applies the given filter.
     :param filters: The names of the filters
@@ -56,24 +78,30 @@ def testFilters(source_image_path, F, filters, min_kernel_size=3, max_kernel_siz
     :param max_kernel_size: The maximum kernel size
     :param padding: The type of padding to use
     """
-    
+
     # get image name without the extension
     source_image_name = os.path.splitext(os.path.basename(source_image_path))[0]
 
     # Read the image
     source_image = plt.imread(source_image_path)
 
+    # Generate the results file name and create the file if it doesn't exist
     results_csv_file_name = getResultsFile()
 
+    # Get the filter type being tested
     filter_type = 'linear' if F == LF else 'nonlinear'
 
+    # Create a list of kernel sizes to test
     kernel_sizes = range(min_kernel_size, max_kernel_size + 1, 2)
 
+    # Test the filters
     for filter_name in filters:
+        # Test the filters with different kernel sizes
         for kernel_size in kernel_sizes:
             # Get the image filename
-            dest_image_file_name = getFileName(kernel_size, padding, 'filter', source_image_name, filter_name)
-            
+            dest_image_file_name = getFileName(
+                kernel_size, padding, 'filter', source_image_name, filter_name)
+
             # Start the timer
             start_time = time.perf_counter_ns()
             # Apply the filter
@@ -87,23 +115,37 @@ def testFilters(source_image_path, F, filters, min_kernel_size=3, max_kernel_siz
             plt.imsave(dest_image_file_name, dest_image, cmap='gray')
 
             # Print the results
-            print(f'Image: {source_image_name}\tFilter Type: {filter_type}\tFilter: {filter_name}\tKernel Size: {kernel_size}\tPadding: constant')
+            print(f'''
+                Image: {source_image_name}\tFilter Type: {filter_type}\tFilter:
+                {filter_name}\tKernel Size: {kernel_size}\tPadding: constant
+            ''')
 
             # Write the results to the results file
             with open(results_csv_file_name, 'a', newline='') as resultsFile:
                 csvWriter = csv.writer(resultsFile)
-                csvWriter.writerow([source_image_name, filter_type, filter_name, kernel_size, padding, runtime, dest_image_file_name])
+                csvWriter.writerow([source_image_name,
+                                    filter_type,
+                                    filter_name,
+                                    kernel_size,
+                                    padding,
+                                    runtime,
+                                    dest_image_file_name])
+
 
 def testEdgeDetectors():
     """
     Tests the edge detectors
     """
 
+    # Get the results from the linear and non-linear filters tests.
     df = pd.read_csv('./results/results.csv')
 
+    # Generate the results file name and create the file if it doesn't exist
     results_csv_file_name = getResultsFile('./results/edge-results.csv')
 
+    # for each row in the results file, apply the edge detector
     for row in df.iterrows():
+        # Get the image name, filter name, kernel size, padding, and file name
         image_name = row[1]['image_name']
         filter_name = row[1]['filter_name']
         kernel_size = row[1]['kernel_size']
@@ -113,14 +155,32 @@ def testEdgeDetectors():
         # Get the image
         image = plt.imread(file_name)
 
-        # Get the images first channel
+        # Get the images first channel as the image is grayscale
         image = image[:, :, 0]
 
         # Get the image filename
-        magnitude_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'magnitude')
-        direction_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'direction')
-        combined_image_file_name = getFileName(kernel_size, f'{padding}', 'edge', image_name, filter_name, 'combined')
-        
+        magnitude_image_file_name = getFileName(
+            kernel_size,
+            f'{padding}',
+            'edge',
+            image_name,
+            filter_name,
+            'magnitude')
+        direction_image_file_name = getFileName(
+            kernel_size,
+            f'{padding}',
+            'edge',
+            image_name,
+            filter_name,
+            'direction')
+        combined_image_file_name = getFileName(
+            kernel_size,
+            f'{padding}',
+            'edge',
+            image_name,
+            filter_name,
+            'combined')
+
         # Apply the filter
         magnitude_image = ED.applyFilter(image, 'magnitude', kernel_size)
         direction_image = ED.applyFilter(image, 'direction', kernel_size)
@@ -136,13 +196,38 @@ def testEdgeDetectors():
         # Print the results
         print(f'Image: {image_name}\tFilter Type: edge\tFilter: {filter_name}')
 
+        # Write the results to the results file
         with open(results_csv_file_name, 'a', newline='') as resultsFile:
             csvWriter = csv.writer(resultsFile)
-            csvWriter.writerow([image_name, 'magnitude', filter_name, kernel_size, 'constant', -1, magnitude_image_file_name])
-            csvWriter.writerow([image_name, 'direction', filter_name, kernel_size, 'constant', -1, direction_image_file_name])
-            csvWriter.writerow([image_name, 'combined', filter_name, kernel_size, 'constant', -1, combined_image_file_name])
+            csvWriter.writerow([
+                image_name,
+                'magnitude',
+                filter_name,
+                kernel_size,
+                'constant',
+                -1,
+                magnitude_image_file_name
+            ])
+            csvWriter.writerow([
+                image_name,
+                'direction',
+                filter_name,
+                kernel_size,
+                'constant',
+                -1,
+                direction_image_file_name
+            ])
+            csvWriter.writerow([
+                image_name,
+                'combined',
+                filter_name,
+                kernel_size,
+                'constant',
+                -1,
+                combined_image_file_name
+            ])
 
-    
+
 def getResultsFile(file_name='./results/results.csv'):
     """
     Gets the file name for the results file
@@ -150,7 +235,14 @@ def getResultsFile(file_name='./results/results.csv'):
     :return: The file name
     """
     resultsFileName = file_name
-    headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'runtime', 'file_name']
+    headers = [
+        'image_name',
+        'filter_type',
+        'filter_name',
+        'kernel_size',
+        'padding',
+        'runtime',
+        'file_name']
 
     # Check if the results directory exists
     directory = './results/'
@@ -174,7 +266,8 @@ def getFileName(kernel_size, padding, *args):
 
     :param kernel_size: The size of the kernel
     :param padding: The type of padding
-    :param args: Any additional directories to add to the file name in the order stated.
+    :param args: Any additional directories to add to the file name in the
+        order passed in.
 
     :return: The file name
     """
@@ -196,8 +289,11 @@ def getFileName(kernel_size, padding, *args):
     while fileExists:
         # Generate a random 8 long string. This will be used to name the file
         # so that we don't overwrite the previous results
-        random_string = ''.join(random.choice(string.ascii_letters) for i in range(8))
-        # join kernel size, padding, and random_string with '-' to create the file name
+        random_string = ''.join(
+            random.choice(
+                string.ascii_letters) for i in range(8))
+        # join kernel size, padding, and random_string with '-' to create the
+        # file name
         fileName = '-'.join([str(kernel_size), padding, random_string]) + '.png'
 
         # add the file name to the directory
@@ -207,7 +303,6 @@ def getFileName(kernel_size, padding, *args):
         fileExists = os.path.isfile(fileName)
 
     return fileName
-
 
 
 if __name__ == '__main__':
