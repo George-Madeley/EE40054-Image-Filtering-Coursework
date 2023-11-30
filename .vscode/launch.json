@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "NZJERS Image",
+            "name": "NZjers1 Image",
             "type": "python",
             "request": "launch",
             "program": "./scripts/main.py",
@@ -16,7 +16,7 @@
             ]
         },
         {
-            "name": "Ultrasound Image",
+            "name": "foetus Image",
             "type": "python",
             "request": "launch",
             "program": "./scripts/main.py",
@@ -24,6 +24,17 @@
             "justMyCode": true,
             "args": [
                 "./img/foetus.png"
+            ]
+        },
+        {
+            "name": "Edge Detection",
+            "type": "python",
+            "request": "launch",
+            "program": "./scripts/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "edge"
             ]
         }
     ]

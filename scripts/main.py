@@ -5,6 +5,7 @@ import random
 import string
 import csv
 import time
+import pandas as pd
 
 from linearFilters import LF
 from nonLinearFilters import NLF
@@ -21,23 +22,27 @@ def main():
         print('Usage: python main.py <image>')
         sys.exit(1)
 
-    image_path = arguments[0]
+    if arguments[0] == 'edge':
+        testEdgeDetectors()
+        sys.exit(0)
+    else:
+        image_path = arguments[0]
 
-    # get image name without the extension
-    image_name = os.path.splitext(os.path.basename(image_path))[0]
+        # get image name without the extension
+        image_name = os.path.splitext(os.path.basename(image_path))[0]
 
-    # Read the image
-    image = plt.imread(image_path)
+        # Read the image
+        image = plt.imread(image_path)
 
-    MIN_KERNEL_SIZE = 3
-    MAX_KERNEL_SIZE = 15
+        MIN_KERNEL_SIZE = 3
+        MAX_KERNEL_SIZE = 15
+        
 
-    # Test the linear filters
-    testLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
+        # Test the linear filters
+        testLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
 
-    # Test the non-linear filters
-    testNonLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
-
+        # Test the non-linear filters
+        testNonLinearFilters(image, image_name, MIN_KERNEL_SIZE, MAX_KERNEL_SIZE)
 
 def testLinearFilters(source_image, source_image_name, min_kernel_size, max_kernel_size):
     """
@@ -118,7 +123,43 @@ def testNonLinearFilters(source_image, source_image_name, min_kernel_size, max_k
                 csvWriter = csv.writer(resultsFile)
                 csvWriter.writerow([source_image_name, 'nonlinear', filter_name, kernel_size, 'constant', runtime, dest_image_file_name])
 
+def testEdgeDetectors():
+    """
+    Tests the edge detectors
+    """
 
+    df = pd.read_csv('./results/results.csv')
+
+    for row in df.iterrows():
+        image_name = row[1]['image_name']
+        filter_name = row[1]['filter_name']
+        kernel_size = row[1]['kernel_size']
+        padding = row[1]['padding']
+        file_name = row[1]['file_name']
+
+        # Get the image
+        image = plt.imread(file_name)
+
+        # Get the images first channel
+        image = image[:, :, 0]
+
+        # Get the image filename
+        magnitude_image_file_name = getFileName(image_name, f'{filter_name}-edge', kernel_size, f'{padding}-magnitude')
+        direction_image_file_name = getFileName(image_name, f'{filter_name}-edge', kernel_size, f'{padding}-direction')
+        
+        # Apply the filter
+        magnitude_image = ED.applyFilter(image, 'magnitude', kernel_size)
+        direction_image = ED.applyFilter(image, 'direction', kernel_size)
+
+        # Save the image
+        plt.imsave(magnitude_image_file_name, magnitude_image, cmap='gray')
+        # Save the directional image using a rainbow colormap
+        plt.imsave(direction_image_file_name, direction_image, cmap='rainbow')
+
+        # Print the results
+        print(f'Image: {image_name}\tFilter Type: edge\tFilter: {filter_name}')
+
+    
 def getResultsFile():
     """
     Gets the file name for the results file
