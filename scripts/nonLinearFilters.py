@@ -21,12 +21,16 @@ class NonLinearFilters(ISpatialFilters):
             - 'central_value': The central value of the weights (for adaptive weighted median filter)
             - 'constant': The constant (for adaptive weighted median filter)
             - 'd': The number of pixels to be trimmed (for alpha-trimmed mean filter)
+            - 'padding': The type of padding to use. Possible values:
 
         :return: The filtered image
         """
 
         # Check for errors in the parameters
         self.checkErrors(kernel_size, 'constant', **kwargs)
+
+        # Get the padding type
+        padding = kwargs.get('padding', 'constant')
         
         if filter_name == 'median':
             filter_function = lambda roi : self.applyMedianFilter(roi)
@@ -47,7 +51,7 @@ class NonLinearFilters(ISpatialFilters):
             filter_function = lambda roi : self.applyAlphaTrimmedMeanFilter(roi, d)
         else:
             raise Exception('Invalid filter name.')
-        return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+        return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
     
     def calculateSpatialDomainConvolution(self, image, kernel_size, filter_function, padding='constant'):
         """

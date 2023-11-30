@@ -16,13 +16,14 @@ class IFrequencyFilters(ABC):
         pass
 
     @abstractmethod
-    def calculateFrequencyDomainConvolution(self, image, kernel):
+    def calculateFrequencyDomainConvolution(self, image, kernel, padding='constant'):
         """
         Performs a convolution on an image using a kernel using the Fast Fourier Transform
         algorithm.
 
         :param image: The image to be convolved
         :param kernel: The kernel to convolve the image with
+        :param padding: The type of padding to use
 
         :return: The convolved image
         """

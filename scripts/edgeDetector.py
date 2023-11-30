@@ -19,7 +19,11 @@ class EdgeDetector(IFrequencyFilters):
             - 'magnitude',
             - 'direction',
         :param kernel_size: The size of the kernel
-        :param kwargs: The arguments for the filter
+        :param kwargs: The arguments for the filter. Possible values are:
+            - 'padding': The type of padding to use. Possible values are:
+                - 'constant': Pads with a constant value
+                - 'edge': Pads with the edge values
+                - 'linear_ramp': Pads with a linear ramp
         
         :return: The filtered image
         """
@@ -27,30 +31,33 @@ class EdgeDetector(IFrequencyFilters):
         # Check for errors in the parameters
         self.checkErrors(kernel_size, 'constant', **kwargs)
 
+        padding = kwargs.get('padding', 'constant')
+
         # get the kernel
         if filter_name == 'horizontal':
             kernel = self.getHorizontalKernel()
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'vertical':
             kernel = self.getVerticalKernel()
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'diagonal':
             kernel = self.getDiagonalKernel()
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'magnitude':
-            return self.calculateEdgeMagnitude(image)
+            return self.calculateEdgeMagnitude(image, padding)
         elif filter_name == 'direction':
-            return self.calculateEdgeDirection(image)
+            return self.calculateEdgeDirection(image, padding)
         else:
             raise Exception('Invalid filter name.')
 
-    def calculateFrequencyDomainConvolution(self, image, kernel):
+    def calculateFrequencyDomainConvolution(self, image, kernel, padding='constant'):
         """
         Performs a convolution on an image using a kernel using the Fast Fourier Transform
         algorithm.
 
         :param image: The image to be convolved
         :param kernel: The kernel to convolve the image with
+        :param padding: The type of padding to use
 
         :return: The convolved image
         """
@@ -66,7 +73,7 @@ class EdgeDetector(IFrequencyFilters):
         pad_image = np.pad(image, pad_width=(
             (math.floor(half_kernal[0]), math.ceil(half_kernal[0])),
             (math.floor(half_kernal[1]), math.ceil(half_kernal[1]))
-        ), mode='edge')
+        ), mode=padding)
 
 
         pad_kernel = np.zeros(shape=new_size)
@@ -107,11 +114,12 @@ class EdgeDetector(IFrequencyFilters):
         return np.array([[2, 1, 0], [1, 0, -1], [0, -1, -2]])
     
     
-    def calculateEdgeMagnitude(self, image):
+    def calculateEdgeMagnitude(self, image, padding='constant'):
         """
         Calculates the magnitude of the edges
         
         :param image: The image to calculate the magnitude of the edges for
+        :param padding: The type of padding to use
 
         :return: The magnitude of the edges
         """
@@ -121,19 +129,20 @@ class EdgeDetector(IFrequencyFilters):
         vertical_kernel = self.getVerticalKernel()
 
         # Gets the horizontal and vertical edges
-        horizontal_edges = self.calculateFrequencyDomainConvolution(image, horizonal_kernel)
-        vertical_edges = self.calculateFrequencyDomainConvolution(image, vertical_kernel)
+        horizontal_edges = self.calculateFrequencyDomainConvolution(image, horizonal_kernel, padding)
+        vertical_edges = self.calculateFrequencyDomainConvolution(image, vertical_kernel, padding)
 
         # Calculates the magnitude of the edges
         edge_magnitude = np.sqrt(np.square(horizontal_edges) + np.square(vertical_edges))
         
         return edge_magnitude
     
-    def calculateEdgeDirection(self, image):
+    def calculateEdgeDirection(self, image, padding='constant'):
         """
         Calculates the direction of the edges
         
         :param image: The image to calculate the direction of the edges for
+        :param padding: The type of padding to use
 
         :return: The direction of the edges
         """
@@ -143,8 +152,8 @@ class EdgeDetector(IFrequencyFilters):
         vertical_kernel = self.getVerticalKernel()
 
         # Gets the horizontal and vertical edges
-        horizontal_edges = self.calculateFrequencyDomainConvolution(image, horizonal_kernel)
-        vertical_edges = self.calculateFrequencyDomainConvolution(image, vertical_kernel)
+        horizontal_edges = self.calculateFrequencyDomainConvolution(image, horizonal_kernel, padding)
+        vertical_edges = self.calculateFrequencyDomainConvolution(image, vertical_kernel, padding)
 
         # Calculates the direction of the edges
         edge_direction = np.arctan2(horizontal_edges, vertical_edges)

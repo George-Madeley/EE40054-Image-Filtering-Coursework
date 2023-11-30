@@ -26,6 +26,10 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         :param kwargs: The arguments for the filter. Possible values are:
             - 'order': The order of the filter. Required for 'butterworth_low_pass' and 'contra_harmonic_mean'
             - 'cutoff': The cutoff frequency. Required for 'butterworth_low_pass' and 'low_pass'
+            - 'padding': The type of padding to use. Possible values are:
+                - 'constant'
+                - 'edge'
+                - 'linear_ramp'
         
         :return: The filtered image
         """
@@ -33,34 +37,36 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         # Check for errors in the parameters
         self.checkErrors(kernel_size, 'constant', **kwargs)
 
+        padding = kwargs.get('padding', 'constant')
+
         # get the kernel
         if filter_name == 'gaussian':
             kernel = self.getGaussianKernel(kernel_size)
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'box':
             kernel = self.getBoxKernel(kernel_size)
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'butterworth_low_pass':
             order = kwargs.get('order', 2)
             cutoff = kwargs.get('cutoff', 50.0)
             kernel = self.getButterworthLowPassFilter(kernel_size, cutoff, order)
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'low_pass':
             cutoff = kwargs.get('cutoff', 50.0)
             kernel = self.getLowPassFilter(kernel_size, cutoff)
-            return self.calculateFrequencyDomainConvolution(image, kernel)
+            return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'geometric_mean':
             filter_function = lambda roi: self.applyGeometricMeanFilter(roi)
-            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
         elif filter_name == 'harmonic_mean':
             filter_function = lambda roi: self.applyHarmonicMeanFilter(roi)
-            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+            return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
         elif filter_name == 'contra_harmonic_mean':
             order = kwargs.get('order', 2)
             filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, order)
-            filtered_image =  self.calculateSpatialDomainConvolution(image, kernel_size, filter_function)
+            filtered_image =  self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
             filter_function = lambda roi: self.applyContraHarmonicMeanFilter(roi, -order)
-            return self.calculateSpatialDomainConvolution(filtered_image, kernel_size, filter_function)
+            return self.calculateSpatialDomainConvolution(filtered_image, kernel_size, filter_function, padding)
         else:
             raise Exception('Invalid filter name.')
 
@@ -100,13 +106,14 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
                 
         return convolved_image
 
-    def calculateFrequencyDomainConvolution(self, image, kernel):
+    def calculateFrequencyDomainConvolution(self, image, kernel, padding='constant'):
         """
         Performs a convolution on an image using a kernel using the Fast Fourier Transform
         algorithm.
 
         :param image: The image to be convolved
         :param kernel: The kernel to convolve the image with
+        :param padding: The type of padding to use
 
         :return: The convolved image
         """
@@ -123,7 +130,7 @@ class LinearFilters(IFrequencyFilters, ISpatialFilters):
         pad_image = np.pad(image, pad_width=(
             (math.floor(half_kernal[0]), math.ceil(half_kernal[0])),
             (math.floor(half_kernal[1]), math.ceil(half_kernal[1]))
-        ), mode='edge')
+        ), mode=padding)
 
 
         pad_kernel = np.zeros(shape=new_size)
