@@ -2,13 +2,15 @@ import numpy as np
 
 from iSpatialFilters import ISpatialFilters
 
+
 class NonLinearFilters(ISpatialFilters):
     def applyFilter(self, image, filter_name, kernel_size, **kwargs):
         """
         Applies a non-linear filter to an image
 
         :param image: The image to be convolved
-        :param filter_name: The type of kernel to convolve the image with. Possible values:
+        :param filter_name: The type of kernel to convolve the image with.
+        Possible values:
             - 'median',
             - 'adaptive_weighted_median',
             - 'truncated_median',
@@ -31,52 +33,70 @@ class NonLinearFilters(ISpatialFilters):
 
         # Get the padding type
         padding = kwargs.get('padding', 'constant')
-        
-        # The filter function is the equation to apply to the region of interest when convolving the image. The filter
-        # function is determined by the filter name.
+
+        # The filter function is the equation to apply to the region of interest
+        # when convolving the image. The filter function is determined by the
+        # filter name.
         if filter_name == 'median':
             # The median filter function is the median of the region of interest
-            filter_function = lambda roi : self.applyMedianFilter(roi)
+            def filter_function(roi): return self.applyMedianFilter(roi)
         elif filter_name == 'adaptive_weighted_median':
-            # The adaptive weighted median filter function is the weighted median of the region of interest. The filter
-            # function requires two parameters: the central value and the constant. These parameters are got from the
-            # kwargs dictionary.
+            # The adaptive weighted median filter function is the weighted
+            # median of the region of interest. The filter function requires two
+            # parameters: the central value and the constant. These parameters
+            # are got from the kwargs dictionary.
             central_value = kwargs.get('central_value', 100)
             constant = kwargs.get('constant', 10)
-            filter_function = lambda roi : self.applyAdaptiveWeightedMedianFilter(roi, central_value, constant)
+
+            def filter_function(roi): return self.applyAdaptiveWeightedMedianFilter(
+                roi, central_value, constant)
         elif filter_name == 'truncated_median':
-            # The truncated median filter function is the truncated median of the region of interest
-            filter_function = lambda roi : self.applyTruncatedMedianFilter(roi)
+            # The truncated median filter function is the truncated median of
+            # the region of interest
+            def filter_function(
+                roi): return self.applyTruncatedMedianFilter(roi)
         elif filter_name == 'min':
-            # The min filter function is the minimum value of the region of interest
-            filter_function = lambda roi : self.applyMinFilter(roi)
+            # The min filter function is the minimum value of the region of
+            # interest
+            def filter_function(roi): return self.applyMinFilter(roi)
         elif filter_name == 'max':
-            # The max filter function is the maximum value of the region of interest
-            filter_function = lambda roi : self.applyMaxFilter(roi)
+            # The max filter function is the maximum value of the region of
+            # interest
+            def filter_function(roi): return self.applyMaxFilter(roi)
         elif filter_name == 'midpoint':
-            # The midpoint filter function is the midpoint of the region of interest
-            filter_function = lambda roi : self.applyMidpointFilter(roi)
+            # The midpoint filter function is the midpoint of the region of
+            # interest
+            def filter_function(roi): return self.applyMidpointFilter(roi)
         elif filter_name == 'alpha_trimmed_mean':
-            # The alpha-trimmed mean filter function is the alpha-trimmed mean of the region of interest. The filter
-            # function requires one parameter: d. This parameter is got from the kwargs dictionary.
+            # The alpha-trimmed mean filter function is the alpha-trimmed mean
+            # of the region of interest. The filter function requires one
+            # parameter: d. This parameter is got from the kwargs dictionary.
             d = kwargs.get('d', 2)
-            filter_function = lambda roi : self.applyAlphaTrimmedMeanFilter(roi, d)
+            def filter_function(
+                roi): return self.applyAlphaTrimmedMeanFilter(roi, d)
         else:
             # If the filter name is not recognized, raise an error.
             raise Exception('Invalid filter name.')
-        
+
         # Apply the filter
-        return self.calculateSpatialDomainConvolution(image, kernel_size, filter_function, padding)
-    
-    def calculateSpatialDomainConvolution(self, image, kernel_size, filter_function, padding='constant'):
+        return self.calculateSpatialDomainConvolution(
+            image, kernel_size, filter_function, padding)
+
+    def calculateSpatialDomainConvolution(
+            self,
+            image,
+            kernel_size,
+            filter_function,
+            padding='constant'):
         """
-        Performs a convolution on an image using a kernel using the spatial domain algorithm.
-        
+        Performs a convolution on an image using a kernel using the spatial
+        domain algorithm.
+
         :param image: The image to be convolved
         :param kernel_size: The size of the kernel
         :param filter_function: The filter function to be applied
         :param padding: The type of padding to use. Possible values:
-        
+
         :return: The convolved image
         """
 
@@ -96,35 +116,39 @@ class NonLinearFilters(ISpatialFilters):
         for i in range(height):
             for j in range(width):
                 # Get the region of interest (ROI) from the padded image
-                roi = padded_image[i:i+kernel_size, j:j+kernel_size]
+                roi = padded_image[i:i + kernel_size, j:j + kernel_size]
 
                 # Apply the desired kernel type
                 convolved_value = filter_function(roi)
                 convolved_image[i, j] = convolved_value
-                
+
         return convolved_image
-    
+
     def applyMedianFilter(self, image_section):
         """
         Performs median filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
-        
+
         :return: The filtered image section
         """
 
         # Calculate the median
         median = np.median(image_section)
         return median
-    
-    def applyAdaptiveWeightedMedianFilter(self, image_section, central_value=100, constant=10):
+
+    def applyAdaptiveWeightedMedianFilter(
+            self,
+            image_section,
+            central_value=100,
+            constant=10):
         """
         Performs adaptive weighted median filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
         :param central_value: The central value of the weights
         :param constant: The constant
-        
+
         :return: The filtered image section
         """
 
@@ -137,9 +161,10 @@ class NonLinearFilters(ISpatialFilters):
         # Set the center of the weights to the central value
         weights[int(height / 2), int(width / 2)] = central_value
 
-        # Calculates the distances from the center by creating a vector of values from -center to center and squaring
-        # them and then creating a matrix of distances from the center by adding the vector to its transpose and
-        # taking the square root of the result
+        # Calculates the distances from the center by creating a vector of
+        # values from -center to center and squaring them and then creating a
+        # matrix of distances from the center by adding the vector to its
+        # transpose and taking the square root of the result
         center = (width - 1) / 2
         vector = np.linspace(-center, center, width)
         vector = vector ** 2
@@ -152,13 +177,14 @@ class NonLinearFilters(ISpatialFilters):
         standard_deviation = np.std(flattened_image_section)
         # Calculate the mean
         mean = np.mean(flattened_image_section)
-        
-        # If the mean is 0, then the weights are equal to the central value. else the weights are calculated using the
-        # formula: weights = central_value - (constant * distances * standard_deviation / mean)
+
+        # If the mean is 0, then the weights are equal to the central value.
+        # else the weights are calculated using the formula.
         if mean == 0:
             weights = central_value
         else:
-            weights = central_value - (constant * distances * standard_deviation / mean)
+            weights = central_value - \
+                (constant * distances * standard_deviation / mean)
 
         # floor the weights and convert them to integers
         weights = np.floor(weights).astype(int).flatten()
@@ -169,30 +195,28 @@ class NonLinearFilters(ISpatialFilters):
             weights[weights < 0] = 0
 
         # Repeat the pixels according to their weights
-        repeated_pixels = np.repeat(flattened_image_section, weights)
-        
+        repeated_pixels = sorted(np.repeat(flattened_image_section, weights))
+
         # Sort the repeated pixels
-        repeated_pixels.sort()
 
         # Calculate the weighted median
         weighted_median = np.median(repeated_pixels)
 
         return weighted_median
-    
+
     def applyTruncatedMedianFilter(self, image_section):
         """
         Performs truncated median filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
-        
+
         :return: The filtered image section
         """
 
         # Flatten the image
-        flattened_image_section = image_section.flatten()
+        flattened_image_section = sorted(image_section.flatten())
 
         # Sort the pixels
-        flattened_image_section.sort()
 
         # Get the minimum and maximum values
         min_value = np.min(flattened_image_section)
@@ -210,13 +234,13 @@ class NonLinearFilters(ISpatialFilters):
         if difference_median_min > difference_median_max:
             # Calculate the lower threshold
             lower_threshold = median_value - difference_median_max
-            
+
             # Get the pixels that are greater than the lower threshold
             truncated_image = flattened_image_section[flattened_image_section >= lower_threshold]
         elif difference_median_min < difference_median_max:
             # Calculate the upper threshold
             upper_threshold = median_value + difference_median_min
-            
+
             # Get the pixels that are less than the upper threshold
             truncated_image = flattened_image_section[flattened_image_section <= upper_threshold]
         else:
@@ -233,50 +257,51 @@ class NonLinearFilters(ISpatialFilters):
     def applyMinFilter(self, image_section):
         """
         Performs min filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
-        
+
         :return: The filtered image section
         """
-        
+
         # Calculate the minimum
         min_value = np.min(image_section)
         return min_value
-    
+
     def applyMaxFilter(self, image_section):
         """
         Performs max filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
-        
+
         :return: The filtered image section
         """
 
         # Calculate the maximum
         max_value = np.max(image_section)
         return max_value
-    
+
     def applyMidpointFilter(self, image_section):
         """
         Performs midpoint filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
-        
+
         :return: The filtered image section
         """
-        # Calculate the midpoint by calculating the average of the minimum and maximum values.
+        # Calculate the midpoint by calculating the average of the minimum and
+        # maximum values.
         min_value = np.min(image_section)
         max_value = np.max(image_section)
         midpoint = (min_value + max_value) / 2
         return midpoint
-    
+
     def applyAlphaTrimmedMeanFilter(self, image_section, d=2):
         """
         Performs alpha-trimmed mean filtering on an image section.
-        
+
         :param image_section: The image section to be filtered
         :param d: The number of pixels to be trimmed
-        
+
         :return: The filtered image section
         """
 
@@ -290,19 +315,20 @@ class NonLinearFilters(ISpatialFilters):
         total_pixels = height * width
 
         # Flatten the image
-        flattened_image_section = image_section.flatten()
+        flattened_image_section = sorted(image_section.flatten())
 
         # Sort the pixels
-        flattened_image_section.sort()
 
         # Trim the pixels
-        trimmed_pixels = flattened_image_section[num_pixels_to_be_trimmed:total_pixels - num_pixels_to_be_trimmed]
+        trimmed_pixels = flattened_image_section[num_pixels_to_be_trimmed:total_pixels -
+                                                 num_pixels_to_be_trimmed]
 
         # Calculate the alpha-trimmed mean
-        alpha_trimmed_mean = (1 / (width * height - d)) * np.mean(trimmed_pixels)
+        alpha_trimmed_mean = (1 / (width * height - d)) * \
+            np.mean(trimmed_pixels)
 
         return alpha_trimmed_mean
-    
+
     def checkErrors(self, kernel_size, padding, **kwargs):
         """
         Checks for errors in the LinearFilters class
@@ -331,15 +357,17 @@ class NonLinearFilters(ISpatialFilters):
         # If the kernel size is not an integer, raise an error.
         elif kernel_size is not None:
             raise TypeError('Kernel size must be an integer.')
-        
+
         # Check that the central_value is a key in kwargs
         if 'central_value' in kwargs:
             # Get the central_value
             central_value = kwargs.get('central_value')
             # Check that the central_value is a float
-            if not isinstance(central_value, float) and central_value is not None:
+            if not isinstance(
+                    central_value,
+                    float) and central_value is not None:
                 raise TypeError('central_value must be a float.')
-        
+
         # Check that constant is a key in kwargs
         if 'constant' in kwargs:
             # Get the constant
@@ -352,7 +380,7 @@ class NonLinearFilters(ISpatialFilters):
             # If the constant is not a float, raise an error.
             elif constant is not None:
                 raise TypeError('constant must be a float.')
-            
+
         # Check that d is a key in kwargs
         if 'd' in kwargs:
             # Get d
@@ -365,10 +393,13 @@ class NonLinearFilters(ISpatialFilters):
             # If d is not an integer, raise an error.
             elif d is not None:
                 raise TypeError('d must be an integer.')
-        
+
         # Check for errors related to the padding type.
         if padding not in ['constant', 'edge', 'linear_ramp']:
-            raise ValueError('Invalid padding type. Possible values are: constant, edge, linear_ramp.')
+            raise ValueError('''
+                Invalid padding type. Possible values are:
+                constant, edge, linear_ramp.
+            ''')
 
 
 NLF = NonLinearFilters()
