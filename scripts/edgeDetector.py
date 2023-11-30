@@ -31,23 +31,30 @@ class EdgeDetector(IFrequencyFilters):
         # Check for errors in the parameters
         self.checkErrors(kernel_size, 'constant', **kwargs)
 
+        # Get the padding type
         padding = kwargs.get('padding', 'constant')
 
-        # get the kernel
+        # Apply the filter specified by the filter name
         if filter_name == 'horizontal':
+            # Get the horizontal kernel and apply the filter
             kernel = self.getHorizontalKernel()
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'vertical':
+            # Get the vertical kernel and apply the filter
             kernel = self.getVerticalKernel()
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'diagonal':
+            # Get the diagonal kernel and apply the filter
             kernel = self.getDiagonalKernel()
             return self.calculateFrequencyDomainConvolution(image, kernel, padding)
         elif filter_name == 'magnitude':
+            # Calculate the magnitude of the edges
             return self.calculateEdgeMagnitude(image, padding)
         elif filter_name == 'direction':
+            # Calculate the direction of the edges
             return self.calculateEdgeDirection(image, padding)
         else:
+            # Raise an error if the filter name is not recognized
             raise Exception('Invalid filter name.')
 
     def calculateFrequencyDomainConvolution(self, image, kernel, padding='constant'):
@@ -75,7 +82,8 @@ class EdgeDetector(IFrequencyFilters):
             (math.floor(half_kernal[1]), math.ceil(half_kernal[1]))
         ), mode=padding)
 
-
+        # Creates a new kernel with the same size as the padded image and fills it with 0s. This is requried for the
+        # convolution to work properly.
         pad_kernel = np.zeros(shape=new_size)
         pad_kernel[0 : kernel.shape[0], 0 : kernel.shape[1]] = kernel
 
@@ -132,7 +140,7 @@ class EdgeDetector(IFrequencyFilters):
         horizontal_edges = self.calculateFrequencyDomainConvolution(image, horizonal_kernel, padding)
         vertical_edges = self.calculateFrequencyDomainConvolution(image, vertical_kernel, padding)
 
-        # Calculates the magnitude of the edges
+        # Calculates the magnitude of the edges using the pythagorean theorem
         edge_magnitude = np.sqrt(np.square(horizontal_edges) + np.square(vertical_edges))
         
         return edge_magnitude
