@@ -130,6 +130,8 @@ def testEdgeDetectors():
 
     df = pd.read_csv('./results/results.csv')
 
+    results_csv_file_name = getResultsFile('./results/edge-results.csv')
+
     for row in df.iterrows():
         image_name = row[1]['image_name']
         filter_name = row[1]['filter_name']
@@ -159,14 +161,19 @@ def testEdgeDetectors():
         # Print the results
         print(f'Image: {image_name}\tFilter Type: edge\tFilter: {filter_name}')
 
+        with open(results_csv_file_name, 'a', newline='') as resultsFile:
+            csvWriter = csv.writer(resultsFile)
+            csvWriter.writerow([image_name, 'magnitude', filter_name, kernel_size, 'constant', -1, magnitude_image_file_name])
+            csvWriter.writerow([image_name, 'direction', filter_name, kernel_size, 'constant', -1, direction_image_file_name])
+
     
-def getResultsFile():
+def getResultsFile(file_name='./results/results.csv'):
     """
     Gets the file name for the results file
 
     :return: The file name
     """
-    resultsFileName = './results/results.csv'
+    resultsFileName = file_name
     headers = ['image_name', 'filter_type', 'filter_name', 'kernel_size', 'padding', 'runtime', 'file_name']
 
     # Check if the results directory exists
